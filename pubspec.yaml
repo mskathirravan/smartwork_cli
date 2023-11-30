@@ -1,5 +1,6 @@
 name: smartwork_cli
-description: "A new Flutter package project."
+description: smartwork_cli package generate the app floder structure.
+
 version: 0.0.1
 repository: https://github.com/mskathirravan/smartwork_cli
 
