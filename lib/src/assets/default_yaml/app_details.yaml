@@ -1,0 +1,15 @@
+app_details:
+  app_name: "Flutter Demo"
+  app_description: "A new Flutter project."
+  app_version: "1.0.0"
+  app_author: "Flutter"
+  app_author_email: ""
+  android_package_name: "com.example.flutter_demo"
+  android_min_sdk_version: 21
+  android_target_sdk_version: 29
+  android_version_code: 1
+  ios_bundle_identifier: "com.example.flutterDemo"
+  ios_deployment_target: "10.0"
+  ios_platform: "ios"
+  ios_version: "1.0.0"
+  ios_build_number: "1"
