@@ -43,9 +43,7 @@ class DomainStructure {
     String className = Operations.capitalizeFirstLetter(featureName);
 
     return '''
-// ignore_for_file: avoid_print
-
-
+import 'package:flutter/foundation.dart';
 import '../../$featureName.dart';
 
 class ${className}UseCase {
@@ -63,12 +61,12 @@ class ${className}UseCase {
     final localData = await localDataSource.getLocalData();
 
     if (localData != null) {
-      print('Using local data in use case: localData');
+      debugPrint('Using local data in use case: localData');
       return localData;
     } else {
       // If data is not available locally, fetch it from the remote source
       final remoteData = await remoteDataSource.fetchDataFromApi();
-      print('Using remote data in use case: \$remoteData');
+      debugPrint('Using remote data in use case: \$remoteData');
 
       // Save the fetched data locally for future use
       await localDataSource.saveDataLocally(remoteData);

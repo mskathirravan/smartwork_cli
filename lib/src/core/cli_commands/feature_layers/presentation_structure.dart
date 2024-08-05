@@ -50,11 +50,11 @@ class ${featureName}Screen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('$featureName Screen'),
       ),
-      body: _buildBody(),
+      body: _buildBody(context),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(BuildContext context) {
     // If loading, show a circular progress indicator
     if (isLoading) {
       return const Center(

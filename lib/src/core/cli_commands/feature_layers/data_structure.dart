@@ -57,7 +57,7 @@ class ${className}RemoteDataSource {
     String className = Operations.capitalizeFirstLetter(featureName);
 
     return '''
-// ignore_for_file: avoid_print
+import 'package:flutter/foundation.dart';
 
   class ${className}LocalDataSource {
   // Implement methods for interacting with local data here
@@ -68,7 +68,7 @@ class ${className}RemoteDataSource {
     // You can replace this with your actual implementation
     await Future.delayed(
         const Duration(seconds: 1)); // Simulating a local storage delay
-    print('Data saved locally: data');
+    debugPrint('Data saved locally: data');
   }
 
   // Example method to retrieve data from a local database or file
@@ -87,7 +87,7 @@ class ${className}RemoteDataSource {
     String className = Operations.capitalizeFirstLetter(featureName);
 
     return '''
-// ignore_for_file: avoid_print
+import 'package:flutter/foundation.dart';
 import '../$featureName.dart';
 class ${className}Repository {
   final ${className}RemoteDataSource remoteDataSource;
@@ -104,12 +104,12 @@ class ${className}Repository {
     final localData = await localDataSource.getLocalData();
 
     if (localData != null) {
-      print('Using local data: localData');
+      debugPrint('Using local data: localData');
       return localData;
     } else {
       // If data is not available locally, fetch it from the remote source
       final remoteData = await remoteDataSource.fetchDataFromApi();
-      print('Using remote data: \$remoteData');
+      debugPrint('Using remote data: \$remoteData');
 
       // Save the fetched data locally for future use
       await localDataSource.saveDataLocally(remoteData);

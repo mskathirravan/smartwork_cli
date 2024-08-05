@@ -80,9 +80,12 @@ import '../features/home/home.dart';
 
 class Routes {
   static const String homeRoute = '/home';
+  static const String landingRoute = '/landing';
 
   static Route<dynamic> getRoute(RouteSettings routeSettings) {
     switch (routeSettings.name) {
+      case Routes.landingRoute:
+        return landingScreen();
       case Routes.homeRoute:
         return MaterialPageRoute(
             builder: (_) => const HomeScreen(
@@ -101,6 +104,30 @@ class Routes {
           child: Text('Page not found!'),
         ),
       ),
+    );
+  }
+
+  static Route<dynamic> landingScreen() {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) {
+        // Use a FutureBuilder to handle the redirect after a delay
+        return FutureBuilder(
+          future: Future.delayed(const Duration(seconds: 0)),
+          builder: (context, snapshot) {
+            // Check if the future is completed
+            if (snapshot.connectionState == ConnectionState.done) {
+              // Replace the current page with HomeScreen
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+               replaceWith(context, Routes.homeRoute);
+              });
+            }
+            // Display a placeholder or loading indicator while waiting
+            return const Scaffold(
+              body: SizedBox(),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -127,6 +154,7 @@ class Routes {
 import 'package:flutter/material.dart';
 import 'routes/routes_manager.dart';
 import 'shared/initializer/initializer.dart';
+import 'shared/theme/app_theme.dart';
 
 void main() {
   Initializer.singleton.init(() {
@@ -139,10 +167,13 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
       onGenerateRoute: Routes.getRoute,
-      initialRoute: Routes.homeRoute,
+      initialRoute: Routes.landingRoute,
+      theme: AppTheme.lightTheme, // Set the light theme
+      darkTheme: AppTheme.darkTheme, // Set the dark theme
+      themeMode: ThemeMode.system, // Use system theme (light/dark)
     );
   }
 }
@@ -192,7 +223,6 @@ class AppTheme {
         primary: AppColors.primary,
         secondary: AppColors.lightGrey,
         error: AppColors.error,
-        background: AppColors.black,
       ),
       // backgroundColor: AppColors.black,
       scaffoldBackgroundColor: AppColors.black,
@@ -338,8 +368,6 @@ class TextThemes {
 
   static String _initializerContent() {
     return '''
-// ignore_for_file: avoid_print
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'widgets/custom_error_widget.dart';
@@ -365,13 +393,13 @@ class Initializer {
       WidgetsFlutterBinding.ensureInitialized();
       FlutterError.onError = (details) {
         FlutterError.dumpErrorToConsole(details);
-        print(details.stack.toString());
+        debugPrint(details.stack.toString());
       };
 
       await _initServices();
       runApp();
     }, (error, stack) {
-      // print('runZonedGuarded: \${error.toString()}');
+       debugPrint('runZonedGuarded: \${error.toString()}');
     });
   }
 
@@ -383,7 +411,7 @@ class Initializer {
       await _initCrashlytics();
       await _initDeepLinking();
       await _initPushNotification();
-      print('Initializer --> initServices');
+      debugPrint('Initializer --> initServices');
     } catch (err) {
       rethrow;
     }
@@ -433,9 +461,8 @@ class CustomErrorWidget extends StatelessWidget {
 
   static String _dataStorageContent() {
     return '''
-// ignore_for_file: avoid_print
-
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 class DataStorage {
   static final DataStorage singleton = DataStorage._internal();
@@ -450,7 +477,7 @@ class DataStorage {
 
   Future<void> init() async {
     _sharedPreferences = await SharedPreferences.getInstance();
-    print("DataStorage --> init");
+    debugPrint("DataStorage --> init");
   }
 
   Future<bool> containsKey(String key) {
