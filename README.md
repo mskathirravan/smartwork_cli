@@ -33,6 +33,10 @@ MCP.
 > is not yet published — see [SmartWork MCP](docs/mcp.md) for
 > installing it from source.
 
+## Demo
+
+![smartwork init walking through configuration, bootstrapping, and validation in the terminal](docs/assets/project-output.gif)
+
 ## Quick Start
 
 ```bash

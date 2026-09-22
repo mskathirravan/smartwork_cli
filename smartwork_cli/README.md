@@ -1,11 +1,18 @@
 # smartwork_cli
 
+> "Don't read success stories, you will only get a message. Read
+> failure stories, you will get some ideas to get access."
+> — APJ Abdul Kalam
+
 **The all-in-one Flutter project companion** — init, architect, scaffold,
 test, and ship, without leaving the terminal.
 
 SmartWork bootstraps a real Flutter app with a consistent architecture, grows
 it with features, services, targets, fonts, and localization, and verifies
 it's still healthy — one command at a time.
+
+## Demo
+![smartwork init walking through configuration, bootstrapping, and validation in the terminal](../docs/assets/project-output.gif)
 
 ## Install
 
