@@ -1,0 +1,20 @@
+name: smartwork_cli
+description: CLI interface for Smartwork project generation and management.
+version: 1.0.0
+homepage: https://github.com/mskathirravan/smartwork_cli
+repository: https://github.com/mskathirravan/smartwork_cli
+
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+
+executables:
+  smartwork: smartwork
+
+dependencies:
+  smartwork_core:
+    path: ../smartwork_core
+  args: ^2.7.0
+
+dev_dependencies:
+  test: ^1.32.0
+  lints: ^6.1.0

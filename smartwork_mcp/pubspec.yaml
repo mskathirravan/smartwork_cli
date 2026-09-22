@@ -1,0 +1,19 @@
+name: smartwork_mcp
+description: Model Context Protocol server exposing SmartWork operations.
+version: 1.0.0
+homepage: https://github.com/mskathirravan/smartwork_cli
+repository: https://github.com/mskathirravan/smartwork_cli
+publish_to: none
+
+environment:
+  sdk: ">=3.2.0 <4.0.0"
+
+dependencies:
+  smartwork_core:
+    path: ../smartwork_core
+  dart_mcp: ^0.5.2
+
+dev_dependencies:
+  test: ^1.32.0
+  lints: ^6.1.0
+  stream_channel: ^2.1.4
