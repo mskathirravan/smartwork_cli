@@ -20,6 +20,8 @@ class MainDartGenerator {
     return '''import 'package:flutter/material.dart';
 
 import 'core/constants/constants.dart';
+import 'core/environment/environment.dart';
+import 'core/environment/environment_manager.dart';
 ${localizationImport}import 'services/bootstrap/bootstrap.dart';
 import 'services/routing/app_router.dart';
 import 'services/theme/app_theme.dart';
@@ -39,15 +41,30 @@ class $_appClassName extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: ThemeService.instance,
+      listenable: Listenable.merge([
+        ThemeService.instance,
+        EnvironmentManager.instance,
+      ]),
       builder: (context, _) {
         return MaterialApp(
           title: AppConstants.appName,$onGenerateTitle
+          debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
           themeMode: ThemeService.instance.currentThemeMode,$localizationParams
           onGenerateRoute: AppRouter.onGenerateRoute,
           initialRoute: AppRouter.home,
+          builder: (context, child) {
+            if (child == null) return const SizedBox.shrink();
+            final environment = EnvironmentManager.instance.currentEnvironment;
+            if (environment == Environment.prod) return child;
+            return Banner(
+              message: environment.label,
+              location: BannerLocation.topEnd,
+              color: Colors.red,
+              child: child,
+            );
+          },
         );
       },
     );

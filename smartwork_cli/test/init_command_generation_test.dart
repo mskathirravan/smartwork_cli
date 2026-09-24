@@ -160,6 +160,64 @@ flutter:
     });
 
     test(
+        'a projectDescription replaces Flutter\'s default pubspec.yaml '
+        'description, exactly like a real smartwork init run', () async {
+      final command = InitCommand(
+        projectPath: tempDir.path,
+        projectValidator: ProjectValidator(
+          runProcess: (executable, arguments, {workingDirectory}) async {
+            return ProcessResult(0, 0, '', '');
+          },
+        ),
+        flutterBootstrap: FlutterBootstrap(
+          runProcess: (executable, arguments, {workingDirectory}) async {
+            File('${tempDir.path}/pubspec.yaml').writeAsStringSync('''
+name: demo_app
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+''');
+            Directory('${tempDir.path}/lib').createSync();
+            Directory('${tempDir.path}/android').createSync();
+            Directory('${tempDir.path}/ios').createSync();
+            return ProcessResult(0, 0, '', '');
+          },
+        ),
+      );
+
+      await command.generateProject(
+        _config(),
+        projectDescription:
+            'A mobile shopping app for discovering products and placing '
+            'orders.',
+      );
+
+      final pubspec = File('${tempDir.path}/pubspec.yaml').readAsStringSync();
+      expect(
+        pubspec,
+        contains('description: "A mobile shopping app for discovering '
+            'products and placing orders."'),
+      );
+      expect(pubspec, isNot(contains('A new Flutter project.')));
+    });
+
+    test(
         'includeFontSample: true embeds FontSample into the freshly '
         'generated Home page and reports it', () async {
       final command = InitCommand(

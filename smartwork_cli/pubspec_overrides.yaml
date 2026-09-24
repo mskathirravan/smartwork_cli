@@ -1,0 +1,6 @@
+# Local-only: makes smartwork_cli's tests run against this repo's
+# unpublished smartwork_core changes instead of the pub.dev-hosted
+# version pinned in pubspec.yaml. Gitignored — never committed.
+dependency_overrides:
+  smartwork_core:
+    path: ../smartwork_core

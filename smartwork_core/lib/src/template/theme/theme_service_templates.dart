@@ -10,12 +10,10 @@ class ThemeServiceTemplates {
 import '../../core/constants/constants.dart';
 import '../storage/storage_service.dart';
 
-/// A `ChangeNotifier` — not just a plain singleton like
-/// `EnvironmentManager` — because `main.dart`'s root widget must
-/// visually rebuild the instant the Debug screen applies a new theme,
-/// with no app restart. `EnvironmentManager` has no such requirement:
-/// Network reads `currentBaseUrl` fresh on every request, so nothing
-/// needs to be notified when it changes.
+/// A `ChangeNotifier` because `main.dart`'s root widget must visually
+/// rebuild the instant the Debug screen applies a new theme, with no
+/// app restart — the same reason `EnvironmentManager` is one too, for
+/// its environment banner.
 class ThemeService extends ChangeNotifier {
   ThemeService._();
 

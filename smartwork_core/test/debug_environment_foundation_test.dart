@@ -154,9 +154,9 @@ void main() {
       final content = TemplateEngine()
           .render(EnvironmentTemplates.environmentTemplate(), {});
       expect(content, contains('enum Environment { prod, stage, dev }'));
-      expect(content, contains("return 'Production';"));
-      expect(content, contains("return 'Staging';"));
-      expect(content, contains("return 'Development';"));
+      expect(content, contains("return 'PROD';"));
+      expect(content, contains("return 'STAGE';"));
+      expect(content, contains("return 'DEV';"));
     });
 
     test('EnvironmentUrls maps every Environment to its ApiConstants URL', () {
@@ -773,6 +773,54 @@ void main() {
               reason: '$architecture + $stateManagement');
           expect(content, isNot(contains('{{')),
               reason: '$architecture + $stateManagement');
+          for (final line in content.split('\n')) {
+            expect(line.length, lessThanOrEqualTo(80),
+                reason: '$architecture + $stateManagement has a line dart '
+                    'format would rewrap, which fails the "smartwork '
+                    'init" Format validation phase: "$line"');
+          }
+        }
+      }
+    });
+
+    test(
+        'the Apply button\'s confirmation SnackBar is present and dart '
+        'format-canonical for every architecture and every state '
+        'management — regression for a real "smartwork init" Format '
+        'validation failure caused by the SnackBar wrapping differently '
+        'at each state management\'s indentation depth', () async {
+      for (final architecture in Architecture.values) {
+        for (final stateManagement in StateManagement.values) {
+          final dir =
+              Directory.systemTemp.createTempSync('smartwork_debug_snackbar_');
+          addTearDown(() => dir.deleteSync(recursive: true));
+          final scopedPaths = ProjectPaths(projectRoot: dir.path);
+
+          await DebugFeatureGenerator().generate(
+            architecture,
+            stateManagement,
+            scopedPaths,
+            FileWriter(),
+          );
+
+          final pageFile = switch (architecture) {
+            Architecture.cleanArchitecture =>
+              scopedPaths.featuresDebugPageFileClean,
+            Architecture.mvvm => scopedPaths.featuresDebugPageFileMvvm,
+            Architecture.mvp => scopedPaths.featuresDebugPageFileMvp,
+          };
+          final content = File(pageFile).readAsStringSync();
+
+          expect(
+            content,
+            contains("ScaffoldMessenger.of(context).showSnackBar("),
+            reason: '$architecture + $stateManagement',
+          );
+          expect(
+            content,
+            contains("Text('Changes applied.')"),
+            reason: '$architecture + $stateManagement',
+          );
         }
       }
     });

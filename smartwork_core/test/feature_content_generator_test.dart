@@ -1450,6 +1450,47 @@ void main() {
       }
     });
 
+    group(
+        'long feature names never produce a line dart format would '
+        'rewrap (regression: a real "smartwork init" run with the '
+        'E-Commerce/Food Delivery recommended feature list failed its '
+        'Format validation phase because of this)', () {
+      test(
+          'Clean Architecture + BLoC, feature name "restaurant_listing" '
+          '(the longest real recommended feature name)', () async {
+        final config = ProjectConfig(
+          projectName: 'demo_app',
+          architecture: Architecture.cleanArchitecture,
+          stateManagement: StateManagement.bloc,
+          network: Network.http,
+          storage: Storage.sharedPreferences,
+          initialFeatures: ['restaurant_listing'],
+        );
+
+        await FeatureGenerator().generate(
+          FeatureConfig(name: 'restaurant_listing'),
+          config,
+          paths,
+          fileWriter,
+        );
+
+        final featurePath = paths.featurePath('restaurant_listing');
+        final dartFiles = Directory(featurePath)
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'));
+
+        for (final file in dartFiles) {
+          for (final line in file.readAsStringSync().split('\n')) {
+            expect(line.length, lessThanOrEqualTo(80),
+                reason: '${file.path} has a line dart format would '
+                    'rewrap, which fails the "smartwork init" Format '
+                    'validation phase: "$line"');
+          }
+        }
+      });
+    });
+
     group('model foundation', () {
       // The Model already exists as part of FeatureComponent.entity (see
       // *Templates.modelTemplate()); this group pins down, explicitly,

@@ -541,9 +541,21 @@ void main() {
         expect(content, contains('await Bootstrap.initialize();'));
         expect(content, contains('runApp(const MyApp());'));
         expect(content, contains('class MyApp extends StatelessWidget'));
-        expect(content, contains('listenable: ThemeService.instance'));
+        expect(
+          content,
+          contains('Listenable.merge([\n'
+              '        ThemeService.instance,\n'
+              '        EnvironmentManager.instance,\n'
+              '      ]),'),
+        );
         expect(content, contains('onGenerateRoute: AppRouter.onGenerateRoute'));
         expect(content, contains('initialRoute: AppRouter.home'));
+        expect(content, contains('debugShowCheckedModeBanner: false'));
+        expect(
+          content,
+          contains('if (environment == Environment.prod) return child;'),
+        );
+        expect(content, contains('message: environment.label,'));
         expect(content, isNot(contains('{{')));
 
         // Bootstrap must run strictly before runApp().

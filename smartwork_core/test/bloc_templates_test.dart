@@ -47,6 +47,36 @@ void main() {
       expect(rendered, contains('emit(const HomeLoaded());'));
     });
 
+    test(
+        'a long feature name wraps the class declaration onto two lines, '
+        'matching dart format\'s own 80-column output — regression for a '
+        'real "smartwork init" Format validation failure with feature '
+        'names like "authentication"/"product_catalog"', () {
+      final template =
+          BlocTemplates.blocTemplate('authentication', 'Authentication');
+      final rendered =
+          engine.render(template, varsFor('authentication', 'Authentication'));
+
+      expect(
+        rendered,
+        contains('class AuthenticationBloc\n'
+            '    extends Bloc<AuthenticationEvent, AuthenticationState> {'),
+      );
+      for (final line in rendered.split('\n')) {
+        expect(line.length, lessThanOrEqualTo(80),
+            reason: 'line exceeds dart format\'s 80-column limit: "$line"');
+      }
+    });
+
+    test('a short feature name keeps the class declaration on one line', () {
+      final template = BlocTemplates.blocTemplate('home', 'Home');
+      final rendered = engine.render(template, varsFor('home', 'Home'));
+
+      expect(rendered,
+          contains('class HomeBloc extends Bloc<HomeEvent, HomeState> {'));
+      expect(rendered, isNot(contains('class HomeBloc\n')));
+    });
+
     test('templates render without unresolved placeholders', () {
       final eventTemplate = BlocTemplates.eventTemplate('home', 'Home');
       final stateTemplate = BlocTemplates.stateTemplate('home', 'Home');

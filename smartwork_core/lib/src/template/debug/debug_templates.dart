@@ -538,7 +538,10 @@ $extraFieldDeclaration  final PushTestService _pushTestService = const PushTestS
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Debug')),
+      appBar: AppBar(
+        title: const Text('Debug'),
+        automaticallyImplyLeading: false,
+      ),
       body: BlocBuilder<$typeName, DebugState>(
         bloc: $blocOrCubitExpr,
         builder: (context, state) {
@@ -549,9 +552,7 @@ $extraFieldDeclaration  final PushTestService _pushTestService = const PushTestS
       onThemeChanged: onThemeChanged,
       onCancel: '$blocOrCubitExpr.cancel();\n'
           '                            Navigator.of(context).pop();',
-      onApply: 'await $blocOrCubitExpr.apply();\n'
-          '                            if (context.mounted) '
-          'Navigator.of(context).pop();',
+      applyExpr: '$blocOrCubitExpr.apply()',
     )};
         },
       ),
@@ -597,7 +598,10 @@ $extraFieldDeclaration  final PushTestService _pushTestService = const PushTestS
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Debug')),
+      appBar: AppBar(
+        title: const Text('Debug'),
+        automaticallyImplyLeading: false,
+      ),
       body: Obx(() {
         return ${_settingsListContent(
       draftEnvironmentExpr: '$controllerExpr.draftEnvironment.value',
@@ -606,9 +610,7 @@ $extraFieldDeclaration  final PushTestService _pushTestService = const PushTestS
       onThemeChanged: '$controllerExpr.changeTheme(value);',
       onCancel: '$controllerExpr.cancel();\n'
           '                            Navigator.of(context).pop();',
-      onApply: 'await $controllerExpr.apply();\n'
-          '                            if (context.mounted) '
-          'Navigator.of(context).pop();',
+      applyExpr: '$controllerExpr.apply()',
       dedent: 2,
     )};
       }),
@@ -666,7 +668,10 @@ class _DebugPageState extends State<DebugPage> {
     final state = _notifier.currentState;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Debug')),
+      appBar: AppBar(
+        title: const Text('Debug'),
+        automaticallyImplyLeading: false,
+      ),
       body: ${_settingsListContent(
       draftEnvironmentExpr: 'state.draftEnvironment',
       draftThemeModeExpr: 'state.draftThemeMode',
@@ -674,9 +679,7 @@ class _DebugPageState extends State<DebugPage> {
       onThemeChanged: '_notifier.changeTheme(value);',
       onCancel: '_notifier.cancel();\n'
           '                            Navigator.of(context).pop();',
-      onApply: 'await _notifier.apply();\n'
-          '                            if (context.mounted) '
-          'Navigator.of(context).pop();',
+      applyExpr: '_notifier.apply()',
       dedent: 4,
     )},
     );
@@ -691,7 +694,7 @@ class _DebugPageState extends State<DebugPage> {
     required String onEnvironmentChanged,
     required String onThemeChanged,
     required String onCancel,
-    required String onApply,
+    required String applyExpr,
     int dedent = 0,
   }) {
     final raw = _settingsListContentRaw(
@@ -700,7 +703,7 @@ class _DebugPageState extends State<DebugPage> {
       onEnvironmentChanged: onEnvironmentChanged,
       onThemeChanged: onThemeChanged,
       onCancel: onCancel,
-      onApply: onApply,
+      applyExpr: applyExpr,
       dedent: dedent,
     );
     if (dedent == 0) return raw;
@@ -717,7 +720,7 @@ class _DebugPageState extends State<DebugPage> {
     required String onEnvironmentChanged,
     required String onThemeChanged,
     required String onCancel,
-    required String onApply,
+    required String applyExpr,
     required int dedent,
   }) {
     final decorationBlock = 20 - dedent + 64 <= 80
@@ -730,6 +733,23 @@ class _DebugPageState extends State<DebugPage> {
         : '''_pushTestService.sendTest(
                         delay: Duration(seconds: seconds),
                       );''';
+    // Whether the applied-confirmation SnackBar's constructor fits on one
+    // line depends on dedent (it's re-indented by the same amount as
+    // everything else here), so — like decorationBlock/sendTestBlock
+    // above — the choice is computed from the real column position
+    // rather than hardcoded, to always match dart format's own output.
+    final snackBarBlock = 32 - dedent + 50 <= 80
+        ? "const SnackBar(content: Text('Changes applied.')),"
+        : '''const SnackBar(
+                                  content: Text('Changes applied.'),
+                                ),''';
+    final onApply = '''await $applyExpr;
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                $snackBarBlock
+                              );
+                              Navigator.of(context).pop();
+                            }''';
     return '''Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(
@@ -742,44 +762,44 @@ class _DebugPageState extends State<DebugPage> {
                     'Environment',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  RadioGroup<Environment>(
-                    groupValue: $draftEnvironmentExpr,
+                  const SizedBox(height: 8),
+                  DropdownButton<Environment>(
+                    value: $draftEnvironmentExpr,
+                    isExpanded: true,
+                    items: [
+                      for (final environment in Environment.values)
+                        DropdownMenuItem<Environment>(
+                          value: environment,
+                          child: Text(environment.label),
+                        ),
+                    ],
                     onChanged: (value) {
                       if (value != null) {
                         $onEnvironmentChanged
                       }
                     },
-                    child: Column(
-                      children: [
-                        for (final environment in Environment.values)
-                          RadioListTile<Environment>(
-                            title: Text(environment.label),
-                            value: environment,
-                          ),
-                      ],
-                    ),
                   ),
                   const Divider(),
                   const Text(
                     'Theme',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  RadioGroup<ThemeMode>(
-                    groupValue: $draftThemeModeExpr,
+                  const SizedBox(height: 8),
+                  DropdownButton<ThemeMode>(
+                    value: $draftThemeModeExpr,
+                    isExpanded: true,
+                    items: [
+                      for (final mode in ThemeMode.values)
+                        DropdownMenuItem<ThemeMode>(
+                          value: mode,
+                          child: Text(mode.name),
+                        ),
+                    ],
                     onChanged: (value) {
                       if (value != null) {
                         $onThemeChanged
                       }
                     },
-                    child: Column(
-                      children: [
-                        for (final mode in ThemeMode.values)
-                          RadioListTile<ThemeMode>(
-                            title: Text(mode.name),
-                            value: mode,
-                          ),
-                      ],
-                    ),
                   ),
                   const Divider(),
                   const Text(
@@ -1075,8 +1095,8 @@ ${StorageTestSetup.setUpAndTearDown(storage)}
     await _pumpTallDebugPage(tester);
 
     expect(find.byType(DebugPage), findsOneWidget);
-    expect(find.byType(RadioListTile<Environment>), findsNWidgets(3));
-    expect(find.byType(RadioListTile<ThemeMode>), findsNWidgets(3));
+    expect(find.byType(DropdownButton<Environment>), findsOneWidget);
+    expect(find.byType(DropdownButton<ThemeMode>), findsOneWidget);
   });
 
   testWidgets('Send Test Notification works without requiring Apply first', (
@@ -1095,10 +1115,10 @@ ${StorageTestSetup.setUpAndTearDown(storage)}
   testWidgets('Apply persists the selected Environment', (tester) async {
     await _pumpTallDebugPage(tester);
 
-    await tester.tap(
-      find.widgetWithText(RadioListTile<Environment>, 'Staging'),
-    );
-    await tester.pump();
+    await tester.tap(find.byType(DropdownButton<Environment>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('STAGE').last);
+    await tester.pumpAndSettle();
     // Apply performs a real, storage-mechanism-dependent write (e.g.
     // real file I/O for Hive). testWidgets' fake-async test zone never
     // lets that complete on its own — WidgetTester.runAsync() is
@@ -1133,10 +1153,10 @@ ${StorageTestSetup.setUpAndTearDown(storage)}
   ) async {
     await _pumpTallDebugPage(tester);
 
-    await tester.tap(
-      find.widgetWithText(RadioListTile<Environment>, 'Staging'),
-    );
-    await tester.pump();
+    await tester.tap(find.byType(DropdownButton<Environment>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('STAGE').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Cancel'));
     await tester.pump();
 

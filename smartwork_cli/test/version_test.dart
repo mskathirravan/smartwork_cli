@@ -62,11 +62,75 @@ version: 9.9.9
     });
 
     test(
-        'returns null (never a made-up placeholder) when no '
-        'smartwork_cli pubspec.yaml can be found', () {
+        'falls back to fallbackSmartworkCliVersion — never null — when '
+        'no smartwork_cli pubspec.yaml can be found on disk; this is the '
+        'real bug reported as "smartwork: version unknown" under '
+        '`dart pub global activate`, whose snapshot cache never contains '
+        'a pubspec.yaml', () {
       final version = readSmartworkCliVersion(workingDirectory: tempDir);
 
-      expect(version, isNull);
+      expect(version, fallbackSmartworkCliVersion);
     });
+  });
+
+  group('findSmartworkCliVersionAmong', () {
+    late Directory tempDir;
+
+    setUp(() {
+      tempDir = Directory.systemTemp.createTempSync('smartwork_version_test_');
+    });
+
+    tearDown(() {
+      tempDir.deleteSync(recursive: true);
+    });
+
+    test('returns null for an empty candidate list', () {
+      expect(findSmartworkCliVersionAmong(const []), isNull);
+    });
+
+    test('returns null when every candidate file is missing', () {
+      final candidates = [
+        File('${tempDir.path}/does_not_exist/pubspec.yaml'),
+      ];
+
+      expect(findSmartworkCliVersionAmong(candidates), isNull);
+    });
+
+    test(
+        'returns null when a candidate exists but belongs to a '
+        'different package', () {
+      final file = File('${tempDir.path}/pubspec.yaml')
+        ..writeAsStringSync('name: my_generated_app\nversion: 1.0.0+1\n');
+
+      expect(findSmartworkCliVersionAmong([file]), isNull);
+    });
+
+    test('returns the version from the first matching candidate', () {
+      final wrongPackage = File('${tempDir.path}/other/pubspec.yaml');
+      wrongPackage.parent.createSync();
+      wrongPackage.writeAsStringSync('name: other_package\nversion: 0.1.0\n');
+
+      final ownPubspec = File('${tempDir.path}/pubspec.yaml')
+        ..writeAsStringSync('name: smartwork_cli\nversion: 9.9.9\n');
+
+      expect(
+        findSmartworkCliVersionAmong([wrongPackage, ownPubspec]),
+        '9.9.9',
+      );
+    });
+  });
+
+  test(
+      'fallbackSmartworkCliVersion is kept in sync with the real '
+      "pubspec.yaml's version — this guards against exactly the drift a "
+      'hardcoded fallback risks', () {
+    final pubspec = File('pubspec.yaml').readAsStringSync();
+    final match =
+        RegExp(r'^version:\s*(\S+)', multiLine: true).firstMatch(pubspec);
+
+    expect(match, isNotNull,
+        reason: 'this test must run with smartwork_cli/ as the working '
+            'directory');
+    expect(fallbackSmartworkCliVersion, match!.group(1));
   });
 }

@@ -82,13 +82,15 @@ class FeatureContentGenerator {
           fileWriter,
           featurePath,
           'data/datasources/${vars['featureName']}_network_data_source.dart',
-          CleanArchitectureTemplates.networkDataSourceTemplate(),
+          CleanArchitectureTemplates.networkDataSourceTemplate(
+              vars['pascalName']!),
           vars);
       await _write(
           fileWriter,
           featurePath,
           'data/datasources/${vars['featureName']}_local_data_source.dart',
-          CleanArchitectureTemplates.localDataSourceTemplate(),
+          CleanArchitectureTemplates.localDataSourceTemplate(
+              vars['pascalName']!),
           vars);
     }
     if (components.contains(FeatureComponent.page)) {

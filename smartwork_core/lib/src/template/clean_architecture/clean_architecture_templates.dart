@@ -139,13 +139,19 @@ void main() {
 ''');
   }
 
-  static Template networkDataSourceTemplate() {
+  static Template networkDataSourceTemplate(String pascalName) {
+    final classDeclaration = _wrappedClassDeclaration(
+      className: '${pascalName}NetworkDataSource',
+      keyword: 'implements',
+      superType: '${pascalName}DataSource',
+    );
+
     return Template(
         content: '''import '../../../../services/network/network_service.dart';
 import '../models/{{featureName}}_model.dart';
 import '{{featureName}}_data_source.dart';
 
-class {{pascalName}}NetworkDataSource implements {{pascalName}}DataSource {
+$classDeclaration
   const {{pascalName}}NetworkDataSource();
 
   @override
@@ -157,13 +163,19 @@ class {{pascalName}}NetworkDataSource implements {{pascalName}}DataSource {
 ''');
   }
 
-  static Template localDataSourceTemplate() {
+  static Template localDataSourceTemplate(String pascalName) {
+    final classDeclaration = _wrappedClassDeclaration(
+      className: '${pascalName}LocalDataSource',
+      keyword: 'implements',
+      superType: '${pascalName}DataSource',
+    );
+
     return Template(
         content: '''import '../../../../services/storage/storage_service.dart';
 import '../models/{{featureName}}_model.dart';
 import '{{featureName}}_data_source.dart';
 
-class {{pascalName}}LocalDataSource implements {{pascalName}}DataSource {
+$classDeclaration
   const {{pascalName}}LocalDataSource();
 
   @override
@@ -173,5 +185,20 @@ class {{pascalName}}LocalDataSource implements {{pascalName}}DataSource {
   }
 }
 ''');
+  }
+
+  /// A long feature name can push a `class X implements Y {` declaration
+  /// past dart format's 80-column limit, in which case it wraps the
+  /// extends/implements clause onto its own line — computed here, from
+  /// the real resolved name, because {{pascalName}} substitution happens
+  /// later and can't make that formatting decision itself.
+  static String _wrappedClassDeclaration({
+    required String className,
+    required String keyword,
+    required String superType,
+  }) {
+    final oneLine = 'class $className $keyword $superType {';
+    if (oneLine.length <= 80) return oneLine;
+    return 'class $className\n    $keyword $superType {';
   }
 }

@@ -45,6 +45,7 @@ class InitCommand extends Command {
       await checkSafetyAndGenerate(
         collected.config,
         includeFontSample: collected.includeFontSample,
+        projectDescription: collected.projectDescription,
         safety: safety,
       );
     } on FlutterBootstrapException catch (e) {
@@ -69,6 +70,7 @@ class InitCommand extends Command {
   Future<void> checkSafetyAndGenerate(
     ProjectConfig config, {
     bool includeFontSample = false,
+    String? projectDescription,
     InitSafetyCheckResult? safety,
   }) async {
     safety ??= await _initSafetyCheck.check(projectPath);
@@ -94,6 +96,7 @@ class InitCommand extends Command {
       config,
       clearExisting: safety.isRegeneration,
       includeFontSample: includeFontSample,
+      projectDescription: projectDescription,
     );
   }
 
@@ -101,6 +104,7 @@ class InitCommand extends Command {
     ProjectConfig config, {
     bool clearExisting = false,
     bool includeFontSample = false,
+    String? projectDescription,
   }) async {
     final stopwatch = Stopwatch()..start();
     print('\n🚀 Bootstrapping Flutter project...');
@@ -118,6 +122,7 @@ class InitCommand extends Command {
         config: config,
         clearExisting: clearExisting,
         includeFontSample: includeFontSample,
+        projectDescription: projectDescription,
       );
     } on ProjectValidationFailedException catch (e) {
       failure = e;

@@ -2,22 +2,34 @@ import 'dart:io';
 
 import 'package:smartwork_core/smartwork_core.dart';
 
+import 'feature_recommendations.dart';
 import 'font_prompt.dart';
 import 'localization_prompt.dart';
+import 'project_type.dart';
 
 class CollectedConfiguration {
   final ProjectConfig config;
   final bool includeFontSample;
 
+  /// Free-text project description, used only to seed the generated
+  /// project's pubspec.yaml `description:` line.
+  ///
+  /// Not persisted to [ProjectConfig] or `.smartwork/project.yaml` — it
+  /// never reaches SmartWork's own generation logic or templates.
+  final String projectDescription;
+
   CollectedConfiguration({
     required this.config,
     required this.includeFontSample,
+    required this.projectDescription,
   });
 }
 
 class ConfigurationPrompt {
   CollectedConfiguration collectAll() {
     final projectName = _promptProjectName();
+    final projectDescription = _promptProjectDescription();
+    final projectType = _promptProjectType();
     final appTargets = _promptAppTargets();
     final architecture = _promptArchitecture();
     final stateManagement = _promptStateManagement();
@@ -26,7 +38,7 @@ class ConfigurationPrompt {
     final fontSelection = FontPrompt().prompt();
     final localization = LocalizationPrompt().prompt();
     final services = _promptServices().map((s) => s.id).toSet();
-    final initialFeatures = _promptInitialFeatures();
+    final initialFeatures = _promptInitialFeatures(projectType);
 
     return CollectedConfiguration(
       config: ProjectConfig(
@@ -42,6 +54,7 @@ class ConfigurationPrompt {
         initialFeatures: initialFeatures,
       ),
       includeFontSample: fontSelection.includeHomeSample,
+      projectDescription: projectDescription,
     );
   }
 
@@ -63,6 +76,27 @@ class ConfigurationPrompt {
 
       return input;
     }
+  }
+
+  String _promptProjectDescription() {
+    stdout.write('Project description (optional, press Enter to skip): ');
+    return stdin.readLineSync()?.trim() ?? '';
+  }
+
+  ProjectType _promptProjectType() {
+    print('\nWhat type of project?\n');
+    for (final type in ProjectType.values) {
+      print('  ${type.index + 1}. ${type.displayName}');
+    }
+    stdout.write('\nSelect (1-${ProjectType.values.length}): ');
+    final index = int.tryParse(stdin.readLineSync()?.trim() ?? '');
+
+    if (index != null && index >= 1 && index <= ProjectType.values.length) {
+      return ProjectType.values[index - 1];
+    }
+
+    print('❌ Invalid selection. Using Custom by default.');
+    return ProjectType.custom;
   }
 
   Set<AppTarget> _promptAppTargets() {
@@ -189,14 +223,36 @@ class ConfigurationPrompt {
     }
   }
 
-  List<String> _promptInitialFeatures() {
+  List<String> _promptInitialFeatures(ProjectType projectType) {
+    final recommended = FeatureRecommendations.forType(projectType);
+
+    if (recommended.isEmpty) {
+      return _promptInitialFeaturesFreeText();
+    }
+
+    print('\nInitial Features:');
+    print('\nRecommended for ${projectType.displayName}:\n');
+    for (final feature in recommended) {
+      print('  ✓ ${feature.label}');
+    }
+    stdout.write('\nUse these recommended features? (Y/n): ');
+    final input = stdin.readLineSync()?.trim().toLowerCase() ?? '';
+
+    if (input.isEmpty || input == 'y' || input == 'yes') {
+      return recommended.map((feature) => feature.id).toList();
+    }
+
+    return _promptInitialFeaturesFreeText();
+  }
+
+  List<String> _promptInitialFeaturesFreeText() {
     print('\nInitial Features (comma-separated):');
     stdout.write('Feature names (e.g., home, profile, settings): ');
     final input = stdin.readLineSync()?.trim() ?? '';
 
     if (input.isEmpty) {
       print('❌ At least one feature is required');
-      return _promptInitialFeatures();
+      return _promptInitialFeaturesFreeText();
     }
 
     final features = <String>[];
@@ -206,7 +262,7 @@ class ConfigurationPrompt {
         if (!RegExp(r'^[a-z][a-z0-9_]*$').hasMatch(trimmed)) {
           print(
               '❌ Invalid feature name: $trimmed. Must start with a letter and contain only lowercase letters, numbers, and underscores');
-          return _promptInitialFeatures();
+          return _promptInitialFeaturesFreeText();
         }
         features.add(trimmed);
       }
@@ -214,7 +270,7 @@ class ConfigurationPrompt {
 
     if (features.isEmpty) {
       print('❌ At least one feature is required');
-      return _promptInitialFeatures();
+      return _promptInitialFeaturesFreeText();
     }
 
     return features;

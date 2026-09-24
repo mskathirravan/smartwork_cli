@@ -10,11 +10,11 @@ extension EnvironmentLabel on Environment {
   String get label {
     switch (this) {
       case Environment.prod:
-        return 'Production';
+        return 'PROD';
       case Environment.stage:
-        return 'Staging';
+        return 'STAGE';
       case Environment.dev:
-        return 'Development';
+        return 'DEV';
     }
   }
 }
@@ -43,13 +43,18 @@ class EnvironmentUrls {
   }
 
   static Template environmentManagerTemplate() {
-    return Template(
-        content: '''import '../../services/storage/storage_service.dart';
+    return Template(content: '''import 'package:flutter/foundation.dart';
+
+import '../../services/storage/storage_service.dart';
 import '../constants/constants.dart';
 import 'environment.dart';
 import 'environment_urls.dart';
 
-class EnvironmentManager {
+/// A `ChangeNotifier` because `main.dart`'s root widget shows an
+/// environment banner (hidden only in `Environment.prod`) that must
+/// visually update the instant the Debug screen applies a new
+/// environment, with no app restart.
+class EnvironmentManager extends ChangeNotifier {
   EnvironmentManager._();
 
   static final EnvironmentManager instance = EnvironmentManager._();
@@ -83,6 +88,7 @@ class EnvironmentManager {
       StorageConstants.environmentKey,
       environment.name,
     );
+    notifyListeners();
   }
 }
 ''');
@@ -137,6 +143,18 @@ ${StorageTestSetup.setUpAndTearDown(storage)}
 
     expect(EnvironmentManager.instance.currentEnvironment, Environment.dev);
   });
+
+  test(
+    'setEnvironment notifies listeners so the app can rebuild live',
+    () async {
+      var notifications = 0;
+      EnvironmentManager.instance.addListener(() => notifications++);
+
+      await EnvironmentManager.instance.setEnvironment(Environment.stage);
+
+      expect(notifications, greaterThan(0));
+    },
+  );
 
   test('setEnvironment persists the identifier, never a URL, through '
       'StorageService', () async {

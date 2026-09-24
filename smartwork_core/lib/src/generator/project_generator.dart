@@ -46,11 +46,13 @@ class ProjectGenerator {
   final String outputPath;
   final ProjectConfig config;
   final bool includeFontSample;
+  final String? projectDescription;
 
   ProjectGenerator({
     required this.outputPath,
     required this.config,
     this.includeFontSample = false,
+    this.projectDescription,
   });
 
   Future<ProjectGenerationResult> generate() async {
@@ -253,8 +255,13 @@ class ProjectGenerator {
     final pubspecFile = File(paths.pubspecFile);
     final generator = PubspecGenerator();
     final content = pubspecFile.existsSync()
-        ? await generator.mergeInto(await pubspecFile.readAsString(), config)
-        : await generator.generate(config);
+        ? await generator.mergeInto(
+            await pubspecFile.readAsString(),
+            config,
+            projectDescription: projectDescription,
+          )
+        : await generator.generate(config,
+            projectDescription: projectDescription);
     await FileWriter().write(paths.pubspecFile, content);
   }
 

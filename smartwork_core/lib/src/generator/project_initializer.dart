@@ -25,6 +25,7 @@ class ProjectInitializer {
     required ProjectConfig config,
     bool clearExisting = false,
     bool includeFontSample = false,
+    String? projectDescription,
   }) async {
     await _flutterBootstrap.create(
       projectName: config.projectName,
@@ -36,6 +37,7 @@ class ProjectInitializer {
       outputPath: projectPath,
       config: config,
       includeFontSample: includeFontSample,
+      projectDescription: projectDescription,
     );
     if (clearExisting) {
       await generator.clearGeneratedContent();

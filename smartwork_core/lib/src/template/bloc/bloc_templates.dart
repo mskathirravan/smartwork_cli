@@ -36,12 +36,24 @@ class {{pascalName}}Error extends {{pascalName}}State {
   }
 
   static Template blocTemplate(String featureName, String pascalName) {
+    // A long feature name (e.g. "product_catalog" -> ProductCatalog) can
+    // push this declaration past dart format's 80-column limit, in which
+    // case it wraps the extends clause onto its own line — computed here,
+    // from the real resolved name, because {{pascalName}} substitution
+    // happens later and can't make that formatting decision itself.
+    final oneLineDeclaration =
+        'class ${pascalName}Bloc extends Bloc<${pascalName}Event, ${pascalName}State> {';
+    final classDeclaration = oneLineDeclaration.length <= 80
+        ? oneLineDeclaration
+        : 'class ${pascalName}Bloc\n'
+            '    extends Bloc<${pascalName}Event, ${pascalName}State> {';
+
     return Template(content: '''import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '{{featureName}}_event.dart';
 import '{{featureName}}_state.dart';
 
-class {{pascalName}}Bloc extends Bloc<{{pascalName}}Event, {{pascalName}}State> {
+$classDeclaration
   {{pascalName}}Bloc() : super(const {{pascalName}}Initial()) {
     on<{{pascalName}}Requested>(_on{{pascalName}}Requested);
   }
