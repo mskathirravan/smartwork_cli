@@ -5,6 +5,7 @@ import 'package:path/path.dart' as p;
 import '../generator/discover/project_scanner.dart';
 import '../models/coverage_report.dart';
 import '../models/mock_mapping.dart';
+import '../validator/project_validator.dart' show SdkUpdateHint;
 import 'lcov_parser.dart';
 import 'mock_server.dart';
 import 'test_analysis_lifecycle.dart';
@@ -13,11 +14,19 @@ import 'test_execution_service.dart';
 class CoverageNotProducedException implements Exception {
   final String projectPath;
 
-  CoverageNotProducedException(this.projectPath);
+  /// What `flutter test --coverage` printed, so the cause (a compile error,
+  /// an unresolvable dependency) is not hidden.
+  final String output;
+
+  CoverageNotProducedException(this.projectPath, {this.output = ''});
 
   @override
-  String toString() => 'flutter test --coverage did not produce '
-      '$projectPath/coverage/lcov.info.';
+  String toString() {
+    final summary = 'flutter test --coverage did not produce '
+        '$projectPath/coverage/lcov.info.';
+    final details = SdkUpdateHint.describeFailure(output);
+    return details.isEmpty ? summary : '$summary\n\n$details';
+  }
 }
 
 class CoverageCollectionLifecycle {
@@ -45,7 +54,7 @@ class CoverageCollectionLifecycle {
       throw FeatureNotFoundForTestingException(feature);
     }
 
-    await _executionService.run(
+    final run = await _executionService.run(
       projectPath: projectPath,
       testTarget: testTarget,
       coverage: true,
@@ -55,7 +64,10 @@ class CoverageCollectionLifecycle {
 
     final lcovFile = File(p.join(projectPath, 'coverage', 'lcov.info'));
     if (!await lcovFile.exists()) {
-      throw CoverageNotProducedException(projectPath);
+      throw CoverageNotProducedException(
+        projectPath,
+        output: run.passed ? '' : run.stderr,
+      );
     }
 
     final report = _lcovParser.parse(await lcovFile.readAsString());

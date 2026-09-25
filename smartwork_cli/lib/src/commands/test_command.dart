@@ -567,6 +567,14 @@ class TestUpdateCommand extends Command {
             for (final failure in result.failures) {
               print('    ✗ ${failure.test}: ${failure.error ?? ''}');
             }
+            // No individual test failed, so the run itself broke (compile
+            // error, unresolvable dependency): show why.
+            if (result.failures.isEmpty) {
+              final details = SdkUpdateHint.describeFailure(result.stderr);
+              for (final line in details.split('\n')) {
+                print('    $line');
+              }
+            }
           }
         }
         await _lifecycle.rollback(projectPath, applyResult.originalContents);

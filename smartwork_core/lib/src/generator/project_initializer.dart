@@ -1,3 +1,4 @@
+import '../filesystem/file_writer.dart';
 import '../flutter/flutter_bootstrap.dart';
 import '../models/project_config.dart';
 import '../validator/project_validator.dart';
@@ -42,7 +43,11 @@ class ProjectInitializer {
     if (clearExisting) {
       await generator.clearGeneratedContent();
     }
-    final generation = await generator.generate();
+    late final ProjectGenerationResult generation;
+    final written = await FileWriter.recordDartWrites(() async {
+      generation = await generator.generate();
+    });
+    await _projectValidator.formatDartFiles(projectPath, written);
 
     final validation = await _projectValidator.validate(
       projectPath,

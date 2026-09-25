@@ -218,6 +218,13 @@ $darkBody}
   }
 
   static Template appThemeTestTemplate(FontConfig fonts) {
+    // Reading a Google Font theme starts a background font download. Before
+    // google_fonts 8.2.1 (which older Flutter SDKs resolve to) a failed
+    // download is an unhandled error that fails a plain `test()`;
+    // `testWidgets` tolerates it.
+    final testCase = fonts.type == FontType.google
+        ? (String name) => "testWidgets('$name', (\n    tester,\n  ) async {"
+        : (String name) => "test('$name', () {";
     final fontAssertions = switch (fonts.type) {
       FontType.none => '',
       FontType.custom => '''
@@ -227,7 +234,7 @@ $darkBody}
   });
 ''',
       FontType.google => '''
-  test('light/dark apply the configured Google Font family', () {
+  ${testCase('light/dark apply the configured Google Font family')}
     expect(AppTheme.light.textTheme.bodyLarge?.fontFamily, contains('${fonts.google!.family}'));
     expect(AppTheme.dark.textTheme.bodyLarge?.fontFamily, contains('${fonts.google!.family}'));
   });
@@ -241,7 +248,7 @@ import 'package:{{projectName}}/core/constants/constants.dart';
 import 'package:{{projectName}}/services/theme/app_theme.dart';
 
 void main() {
-  test('light is a light-brightness ThemeData seeded from AppColors', () {
+  ${testCase('light is a light-brightness ThemeData seeded from AppColors')}
     final theme = AppTheme.light;
 
     expect(theme.brightness, Brightness.light);
@@ -252,7 +259,7 @@ void main() {
     expect(theme.shadowColor, AppColors.shadow);
   });
 
-  test('dark is a dark-brightness ThemeData seeded from AppColors', () {
+  ${testCase('dark is a dark-brightness ThemeData seeded from AppColors')}
     final theme = AppTheme.dark;
 
     expect(theme.brightness, Brightness.dark);
@@ -266,7 +273,7 @@ void main() {
     expect(theme.shadowColor, AppColors.shadowDark);
   });
 
-  test('light and dark are deterministic across repeated access', () {
+  ${testCase('light and dark are deterministic across repeated access')}
     expect(
       AppTheme.light.colorScheme.primary,
       AppTheme.light.colorScheme.primary,

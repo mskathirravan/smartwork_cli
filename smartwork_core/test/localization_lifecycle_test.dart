@@ -138,6 +138,39 @@ void main() {
       expect(config.localization.enabled, isFalse);
     });
 
+    test(
+        'disabling localization deletes the Dart files flutter gen-l10n '
+        'generated (they import the removed packages) but keeps ARB files '
+        'and anything else in lib/l10n/', () async {
+      await LocalizationLifecycle().updateLocalization(
+        projectPath: projectPath,
+        localization: LocalizationConfig.enabled(
+          supportedLocales: ['en', 'fr'],
+          defaultLocale: 'en',
+        ),
+      );
+      // What `flutter gen-l10n` writes next to the ARB files.
+      for (final name in [
+        'app_localizations.dart',
+        'app_localizations_en.dart',
+        'app_localizations_fr.dart',
+      ]) {
+        File('$projectPath/lib/l10n/$name').writeAsStringSync('// gen');
+      }
+      File('$projectPath/lib/l10n/my_helpers.dart').writeAsStringSync('//');
+
+      await LocalizationLifecycle().updateLocalization(
+        projectPath: projectPath,
+        localization: LocalizationConfig.disabled(),
+      );
+
+      final remaining = Directory('$projectPath/lib/l10n')
+          .listSync()
+          .map((e) => e.uri.pathSegments.last)
+          .toSet();
+      expect(remaining, {'app_en.arb', 'app_fr.arb', 'my_helpers.dart'});
+    });
+
     test('never touches routing, README, or any feature', () async {
       final routerBefore =
           File('$projectPath/lib/services/routing/app_router.dart')

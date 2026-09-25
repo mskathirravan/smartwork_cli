@@ -19,6 +19,29 @@ If these fail, SmartWork's own `flutter create`/`flutter analyze`/
 `flutter test` steps will fail the same way — fix your Flutter
 installation first.
 
+## "Your Flutter SDK is too old for the package versions SmartWork uses"
+
+SmartWork generates projects with the newest versions of their packages,
+so it supports only the latest stable Flutter. When your SDK is older,
+`flutter pub get` can't resolve those packages — for example:
+
+```
+Because app depends on google_fonts >=6.3.1 which requires SDK version >=3.7.0 <4.0.0, version solving failed.
+```
+
+or `meta is pinned to version 1.15.0 by flutter_test from the flutter SDK`.
+`smartwork init`, `smartwork target`, `smartwork font`,
+`smartwork service` and `smartwork localization` show this under
+`✗ Dependencies`; `smartwork doctor` reports it as
+`✗ Package compatibility` before you generate anything. Update Flutter,
+then run the command again:
+
+```bash
+flutter upgrade
+# FVM:
+fvm install stable && fvm use stable
+```
+
 ## FVM-managed Flutter not found
 
 ```bash

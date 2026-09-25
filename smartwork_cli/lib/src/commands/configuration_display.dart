@@ -82,12 +82,10 @@ class ConfigurationDisplay {
     print('Project Name:           ${config.projectName}');
     print('App Targets:            '
         '${config.orderedAppTargets.map((t) => t.displayName).join(', ')}');
-    print(
-        'Architecture:           ${_formatEnumName(config.architecture.name)}');
-    print(
-        'State Management:       ${_formatEnumName(config.stateManagement.name)}');
-    print('Network:                ${_formatEnumName(config.network.name)}');
-    print('Storage:                ${_formatEnumName(config.storage.name)}');
+    print('Architecture:           ${configLabel(config.architecture)}');
+    print('State Management:       ${configLabel(config.stateManagement)}');
+    print('Network:                ${configLabel(config.network)}');
+    print('Storage:                ${configLabel(config.storage)}');
     print('Fonts:                  ${_formatFonts(config.fonts)}');
     print(
         'Localization:           ${_formatLocalization(config.localization)}');
@@ -121,13 +119,23 @@ class ConfigurationDisplay {
     return 'Enabled (${localization.supportedLocales.join(', ')}; '
         'default: ${localization.defaultLocale})';
   }
-
-  String _formatEnumName(String name) {
-    return name
-        .replaceAllMapped(
-            RegExp(r'([a-z])([A-Z])'), (m) => '${m.group(1)} ${m.group(2)}')
-        .split(' ')
-        .map((word) => word[0].toUpperCase() + word.substring(1))
-        .join(' ');
-  }
 }
+
+/// The label a configuration choice has in SmartWork's prompts (e.g.
+/// "MVVM", "BLoC", "GetX"), so summaries read the same as the menus.
+String configLabel(Enum choice) => switch (choice) {
+      Architecture.cleanArchitecture => 'Clean Architecture',
+      Architecture.mvvm => 'MVVM',
+      Architecture.mvp => 'MVP',
+      StateManagement.bloc => 'BLoC',
+      StateManagement.cubit => 'Cubit',
+      StateManagement.getx => 'GetX',
+      StateManagement.riverpod => 'Riverpod',
+      Network.http => 'HTTP',
+      Network.dio => 'Dio',
+      Network.other => 'Other',
+      Storage.sharedPreferences => 'SharedPreferences',
+      Storage.hive => 'Hive',
+      Storage.other => 'Other',
+      _ => choice.name,
+    };

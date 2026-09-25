@@ -1625,6 +1625,16 @@ flutter:
       expect(withoutLocalization, isNot(contains('flutter_localizations')));
       expect(withoutLocalization, isNot(contains('  intl:')));
       expect(withoutLocalization, isNot(contains('generate: true')));
+      // flutter_localizations' nested `sdk: flutter` line goes with it —
+      // an orphan would attach to the previous entry and corrupt the YAML.
+      final yaml = loadYaml(withoutLocalization) as YamlMap;
+      expect((yaml['dependencies'] as YamlMap)['flutter'], {'sdk': 'flutter'});
+      expect(
+        RegExp(r'^    sdk: flutter$', multiLine: true)
+            .allMatches(withoutLocalization),
+        hasLength(2),
+        reason: 'only flutter and flutter_test remain SDK dependencies',
+      );
     });
 
     test('disabled -> enabled adds the dependency and the flag', () async {
@@ -1745,6 +1755,37 @@ flutter:
       expect(generated, contains('flutter_localizations:'));
       expect(generated, contains('intl: ${DependencyVersions.intl}'));
       expect(generated, contains('generate: true'));
+    });
+  });
+
+  group('PubspecGenerator.generateDependencyProbe', () {
+    test(
+        'depends on every package SmartWork can generate, plus the '
+        'Flutter-SDK packages that pin some of them (meta, intl)', () async {
+      final probe = await PubspecGenerator(
+        resolver: VersionResolver(fetch: (_) async => null),
+      ).generateDependencyProbe();
+
+      for (final package in [
+        'flutter_bloc',
+        'get',
+        'riverpod',
+        'http',
+        'dio',
+        'meta',
+        'shared_preferences',
+        'hive_flutter',
+        'path_provider_platform_interface',
+        'plugin_platform_interface',
+        'package_info_plus',
+        'in_app_review',
+        'google_fonts',
+        'intl',
+      ]) {
+        expect(probe, contains('  $package: ^'), reason: package);
+      }
+      expect(probe, contains('  flutter_localizations:\n    sdk: flutter'));
+      expect(probe, contains('  flutter_test:\n    sdk: flutter'));
     });
   });
 }

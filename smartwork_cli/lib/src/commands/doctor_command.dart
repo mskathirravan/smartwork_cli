@@ -88,7 +88,11 @@ class DoctorCommand extends Command {
     for (final check in await _environmentDoctor.checkEnvironment()) {
       results.add(DoctorCheckResult(
         check.label,
-        check.passed ? DoctorCheckStatus.pass : DoctorCheckStatus.fail,
+        check.inconclusive
+            ? DoctorCheckStatus.info
+            : check.passed
+                ? DoctorCheckStatus.pass
+                : DoctorCheckStatus.fail,
         detail: check.detail,
       ));
     }
@@ -196,7 +200,9 @@ class DoctorCommand extends Command {
   void _printCheck(DoctorCheckResult check) {
     print('${check.symbol} ${check.label}');
     if (check.detail != null && check.detail!.isNotEmpty) {
-      print('  ${check.detail}');
+      for (final line in check.detail!.split('\n')) {
+        print('  $line');
+      }
     }
   }
 }

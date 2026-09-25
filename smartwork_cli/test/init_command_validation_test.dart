@@ -154,7 +154,7 @@ void main() {
 
     test(
         'a failing Format phase alone stops the whole pipeline before '
-        'Dependencies/Analyze/Tests ever run', () async {
+        'Analyze/Tests ever run', () async {
       final command = InitCommand(
         projectPath: tempDir.path,
         flutterBootstrap: _passingBootstrap(tempDir),
@@ -179,11 +179,55 @@ void main() {
         ),
       );
 
+      expect(lines, contains('✓ Dependencies'));
       expect(lines, contains('✗ Format'));
-      expect(lines, isNot(contains('✓ Dependencies')));
       expect(lines, isNot(contains('✓ Analyze')));
       expect(lines, isNot(contains('✓ Tests')));
       expect(File('${tempDir.path}/README.md').existsSync(), isFalse);
+    });
+
+    test(
+        'an out-of-date Flutter SDK prints the pub get error and an '
+        '"update Flutter" hint under ✗ Dependencies', () async {
+      final command = InitCommand(
+        projectPath: tempDir.path,
+        flutterBootstrap: _passingBootstrap(tempDir),
+        projectValidator: ProjectValidator(
+          runProcess: (executable, arguments, {workingDirectory}) async =>
+              arguments.join(' ') == 'pub get'
+                  ? ProcessResult(
+                      0,
+                      1,
+                      '',
+                      'The current Dart SDK version is 3.6.0.\n'
+                          'Because app depends on google_fonts >=6.3.1 '
+                          'which requires SDK version >=3.7.0 <4.0.0, '
+                          'version solving failed.',
+                    )
+                  : ProcessResult(0, 0, '', ''),
+        ),
+      );
+
+      final lines = <String>[];
+      await runZoned(
+        () async {
+          await expectLater(
+            command.generateProject(_config()),
+            throwsA(isA<ProjectValidationFailedException>()),
+          );
+        },
+        zoneSpecification: ZoneSpecification(
+          print: (self, parent, zone, line) => lines.add(line),
+        ),
+      );
+
+      final text = lines.join('\n');
+      expect(lines, contains('✗ Dependencies'));
+      expect(text, contains('    Because app depends on google_fonts'));
+      expect(text, contains('⚠ Your Flutter SDK is too old'));
+      expect(text, contains('your Dart SDK is 3.6.0'));
+      expect(text, contains('flutter upgrade'));
+      expect(lines, isNot(contains('✓ Format')));
     });
   });
 }

@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 
 import '../filesystem/file_writer.dart';
-import '../flutter/flutter_bootstrap.dart' show ProcessRunner;
+import '../flutter/flutter_bootstrap.dart' show ProcessRunner, runSystemProcess;
 import '../generator/discover/project_scanner.dart';
 import '../models/test_maintenance.dart';
 import '../models/test_result.dart';
@@ -77,7 +77,7 @@ class TestMaintenanceLifecycle {
         _analyzer = analyzer ?? TestMaintenanceAnalyzer(),
         _fileWriter = fileWriter ?? FileWriter(),
         _executionService = executionService ?? TestExecutionService(),
-        _runProcess = runProcess ?? Process.run;
+        _runProcess = runProcess ?? runSystemProcess;
 
   Future<TestMaintenancePlan> plan(String projectPath, String feature) async {
     final scan = await _scanner.scan(projectPath);

@@ -19,12 +19,26 @@ Future<List<String>> _captureOutput(Future<void> Function() body) async {
   return lines;
 }
 
+/// Stands in for `flutter pub get` so these tests never run real Flutter.
+ProjectValidator _validator({ProcessResult? pubGet, List<String>? calls}) =>
+    ProjectValidator(
+      runProcess: (executable, arguments, {workingDirectory}) async {
+        calls?.add('$executable ${arguments.join(' ')}');
+        return pubGet ?? ProcessResult(0, 0, '', '');
+      },
+    );
+
 Future<int> _runFontCommand(
   String projectPath,
-  FontSelection Function() promptFont,
-) async {
+  FontSelection Function() promptFont, {
+  ProjectValidator? validator,
+}) async {
   final runner = CommandRunner('smartwork', 'test')
-    ..addCommand(FontCommand(projectPath: projectPath, promptFont: promptFont));
+    ..addCommand(FontCommand(
+      projectPath: projectPath,
+      promptFont: promptFont,
+      projectValidator: validator ?? _validator(),
+    ));
   final previousExitCode = exitCode;
   exitCode = 0;
   await runner.run(['font']);
@@ -82,6 +96,59 @@ void main() {
 
       final config = await ProjectConfigFile(projectPath: projectPath).read();
       expect(config.fonts.type, FontType.google);
+    });
+
+    test(
+        'switching to a Google Font runs flutter pub get right away and '
+        'reports the dependencies resolved', () async {
+      final calls = <String>[];
+      late int code;
+      final output = await _captureOutput(() async {
+        code = await _runFontCommand(
+          projectPath,
+          () => FontSelection(
+            fonts: FontConfig.google(GoogleFontConfig(family: 'Poppins')),
+            includeHomeSample: false,
+          ),
+          validator: _validator(calls: calls),
+        );
+      });
+
+      expect(code, 0);
+      expect(calls, ['flutter pub get']);
+      expect(output, contains('✔ Dependencies resolved (flutter pub get).'));
+    });
+
+    test(
+        'an out-of-date Flutter SDK is reported with the pub get error and '
+        'an "update Flutter" hint, exiting non-zero', () async {
+      late int code;
+      final output = await _captureOutput(() async {
+        code = await _runFontCommand(
+          projectPath,
+          () => FontSelection(
+            fonts: FontConfig.google(GoogleFontConfig(family: 'Poppins')),
+            includeHomeSample: false,
+          ),
+          validator: _validator(
+            pubGet: ProcessResult(
+              0,
+              1,
+              '',
+              'Because demo_app depends on google_fonts >=6.3.1 which '
+                  'requires SDK version >=3.7.0 <4.0.0, version solving '
+                  'failed.',
+            ),
+          ),
+        );
+      });
+      final text = output.join('\n');
+
+      expect(code, 1);
+      expect(text, contains('Font updated: Poppins (Google Font)'));
+      expect(output, contains('✗ Dependencies'));
+      expect(text, contains('⚠ Your Flutter SDK is too old'));
+      expect(text, contains('flutter upgrade'));
     });
 
     test('updates to a Custom Font, copies the file, and reports it', () async {

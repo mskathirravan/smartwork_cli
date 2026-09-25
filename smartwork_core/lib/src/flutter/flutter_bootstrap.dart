@@ -15,11 +15,26 @@ typedef ProcessRunner = Future<ProcessResult> Function(
   String? workingDirectory,
 });
 
+/// The default [ProcessRunner]. On Windows `flutter` is `flutter.bat`,
+/// which [Process.run] can only launch through a shell.
+Future<ProcessResult> runSystemProcess(
+  String executable,
+  List<String> arguments, {
+  String? workingDirectory,
+}) {
+  return Process.run(
+    executable,
+    arguments,
+    workingDirectory: workingDirectory,
+    runInShell: Platform.isWindows,
+  );
+}
+
 class FlutterBootstrap {
   final ProcessRunner _runProcess;
 
   FlutterBootstrap({ProcessRunner? runProcess})
-      : _runProcess = runProcess ?? Process.run;
+      : _runProcess = runProcess ?? runSystemProcess;
 
   Future<void> create({
     required String projectName,

@@ -263,6 +263,36 @@ void main() {
         });
       }
 
+      test(
+          'reports dependenciesChanged with a "flutter pub get" next step '
+          'only when the service adds a package', () async {
+        await writeProjectConfig();
+        File('${tempDir.path}/pubspec.yaml').writeAsStringSync(
+          'name: demo_app\n\ndependencies:\n  flutter:\n    sdk: flutter\n'
+          '\ndev_dependencies:\n  flutter_test:\n    sdk: flutter\n'
+          '\nflutter:\n  uses-material-design: true\n',
+        );
+
+        // The first add also brings this bare pubspec in line with the
+        // project config (as a real SmartWork pubspec already is).
+        await call('smartwork_service_add',
+            {'projectPath': tempDir.path, 'service': 'analytics'});
+
+        final logger = await call('smartwork_service_add',
+            {'projectPath': tempDir.path, 'service': 'logger'});
+        final loggerResult =
+            logger.structuredContent!['result'] as Map<String, Object?>;
+        expect(loggerResult, isNot(contains('dependenciesChanged')));
+
+        final forceUpdate = await call('smartwork_service_add',
+            {'projectPath': tempDir.path, 'service': 'forceUpdate'});
+        final result =
+            forceUpdate.structuredContent!['result'] as Map<String, Object?>;
+        expect(result['dependenciesChanged'], isTrue);
+        expect(result['nextStep'], contains('flutter pub get'));
+        expect(result['nextStep'], contains('flutter upgrade'));
+      });
+
       test('does not touch routing or feature files', () async {
         await writeProjectConfig();
         await call('smartwork_feature_add',

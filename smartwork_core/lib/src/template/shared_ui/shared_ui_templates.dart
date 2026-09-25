@@ -274,7 +274,7 @@ ${splashPresent ? "export 'splash_screen.dart';\n" : ''}''');
     final family = switch (fonts.type) {
       FontType.custom => fonts.custom!.family,
       FontType.google => fonts.google!.family,
-      FontType.none => '',
+      FontType.none => 'default',
     };
     return Template(content: '''import 'package:flutter/material.dart';
 

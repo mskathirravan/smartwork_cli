@@ -294,6 +294,35 @@ void main() {
     });
 
     test(
+        'a sample still used by the project\'s own code (e.g. a Home page '
+        'generated with it) is kept — updated for the current font, even '
+        'none — so the project keeps compiling', () async {
+      await FontLifecycle().updateFontSample(
+        projectPath: projectPath,
+        includeSample: true,
+      );
+      File('$projectPath/lib/features/home/home_body.dart').writeAsStringSync(
+          "import 'package:demo_app/shared/ui/shared_ui.dart';"
+          '\nconst body = FontSample();\n');
+      await FontLifecycle().updateFont(
+        projectPath: projectPath,
+        fonts: FontConfig.none(),
+      );
+
+      final kept = await FontLifecycle().updateFontSample(
+        projectPath: projectPath,
+        includeSample: false,
+      );
+
+      expect(kept, isTrue);
+      final sample = File('$projectPath/lib/shared/ui/font_sample.dart');
+      expect(sample.readAsStringSync(), contains('Font: default'));
+      final barrel =
+          File('$projectPath/lib/shared/ui/shared_ui.dart').readAsStringSync();
+      expect(barrel, contains("export 'font_sample.dart';"));
+    });
+
+    test(
         'a previously-generated sample is removed when the font is later '
         'switched to none, even if a sample was requested again', () async {
       await FontLifecycle().updateFontSample(

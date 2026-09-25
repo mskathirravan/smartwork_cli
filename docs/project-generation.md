@@ -14,6 +14,28 @@ features, then bootstraps a real Flutter project (`flutter create`)
 and generates SmartWork's structure on top of it. Asks one
 confirmation before writing anything.
 
+## Open the Debug screen
+
+Every generated app includes a Debug screen for development. To open
+it, run the app in debug mode (`flutter run`) and **tap the version
+text (`v1.0.0`) on the Home screen 10 times**.
+
+It lets you:
+
+- switch the **Environment** (DEV, STAGE, PROD);
+- switch the **Theme** (system, light, dark);
+- **send a test notification** (a local simulation — no real push
+  provider is connected).
+
+Environment and Theme changes are drafts: tap **Apply** to save and
+switch them live, or **Cancel** to discard them.
+
+The Debug screen only opens in debug builds — tapping the version in a
+release build does nothing, so it never ships to your users. The tap
+count is `AppConstants.debugTapCount` in
+`lib/core/constants/app_constants.dart`; each generated project's own
+`docs/development.md` has the full details.
+
 ## Add a feature
 
 ```bash

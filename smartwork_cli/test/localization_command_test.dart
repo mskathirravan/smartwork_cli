@@ -18,14 +18,25 @@ Future<List<String>> _captureOutput(Future<void> Function() body) async {
   return lines;
 }
 
+/// Stands in for `flutter pub get` so these tests never run real Flutter.
+ProjectValidator _validator({ProcessResult? pubGet, List<String>? calls}) =>
+    ProjectValidator(
+      runProcess: (executable, arguments, {workingDirectory}) async {
+        calls?.add('$executable ${arguments.join(' ')}');
+        return pubGet ?? ProcessResult(0, 0, '', '');
+      },
+    );
+
 Future<int> _runLocalizationCommand(
   String projectPath,
-  LocalizationConfig Function() promptLocalization,
-) async {
+  LocalizationConfig Function() promptLocalization, {
+  ProjectValidator? validator,
+}) async {
   final runner = CommandRunner('smartwork', 'test')
     ..addCommand(LocalizationCommand(
       projectPath: projectPath,
       promptLocalization: promptLocalization,
+      projectValidator: validator ?? _validator(),
     ));
   final previousExitCode = exitCode;
   exitCode = 0;

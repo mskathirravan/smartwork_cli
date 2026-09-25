@@ -279,7 +279,7 @@ packages:
       path: "../smartwork_core"
       relative: true
     source: path
-    version: "1.0.2"
+    version: "1.0.3"
   source_map_stack_trace:
     dependency: transitive
     description:

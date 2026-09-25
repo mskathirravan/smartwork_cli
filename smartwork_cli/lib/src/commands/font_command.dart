@@ -4,15 +4,21 @@ import 'package:args/command_runner.dart';
 import 'package:smartwork_core/smartwork_core.dart';
 
 import 'font_prompt.dart';
+import 'validation_report.dart';
 
 typedef FontPromptReader = FontSelection Function();
 
 class FontCommand extends Command {
   final String projectPath;
   final FontPromptReader _promptFont;
+  final ProjectValidator _projectValidator;
 
-  FontCommand({this.projectPath = '.', FontPromptReader? promptFont})
-      : _promptFont = promptFont ?? FontPrompt().prompt;
+  FontCommand({
+    this.projectPath = '.',
+    FontPromptReader? promptFont,
+    ProjectValidator? projectValidator,
+  })  : _promptFont = promptFont ?? FontPrompt().prompt,
+        _projectValidator = projectValidator ?? ProjectValidator();
 
   @override
   final name = 'font';
@@ -33,6 +39,7 @@ class FontCommand extends Command {
     }
 
     final selection = _promptFont();
+    final pubspecBefore = readPubspec(projectPath);
     try {
       await FontLifecycle().updateFont(
         projectPath: projectPath,
@@ -42,14 +49,17 @@ class FontCommand extends Command {
         projectPath: projectPath,
         includeSample: selection.includeHomeSample,
       );
-      _reportSuccess(selection.fonts, sampleWritten);
+      _reportSuccess(selection, sampleWritten);
+      await resolveChangedDependencies(
+          projectPath, pubspecBefore, _projectValidator);
     } on FontSourceFileNotFoundException catch (e) {
       print('❌ $e');
       exitCode = 1;
     }
   }
 
-  void _reportSuccess(FontConfig fonts, bool sampleWritten) {
+  void _reportSuccess(FontSelection selection, bool sampleWritten) {
+    final fonts = selection.fonts;
     switch (fonts.type) {
       case FontType.none:
         print('✔ Font updated: none\n');
@@ -59,7 +69,11 @@ class FontCommand extends Command {
         print('✔ Font updated: ${fonts.google!.family} (Google Font)\n');
     }
     print('lib/services/theme/app_theme.dart regenerated to use it.');
-    if (sampleWritten) {
+    if (sampleWritten && !selection.includeHomeSample) {
+      print('\nℹ lib/shared/ui/font_sample.dart kept (updated for this font): '
+          'your code still uses FontSample. Remove const FontSample() from '
+          'it, then run "smartwork font" again to delete the sample.');
+    } else if (sampleWritten) {
       print('\n✔ lib/shared/ui/font_sample.dart generated.');
       print('Add const FontSample() to your Home page to preview it — '
           "SmartWork never edits an existing project's Home page for you.");

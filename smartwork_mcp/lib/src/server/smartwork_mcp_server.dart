@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:dart_mcp/server.dart';
+import 'package:smartwork_core/smartwork_core.dart';
 
 import '../tools/discover_tool.dart';
 import '../tools/doctor_tool.dart';
@@ -22,6 +23,7 @@ base class SmartworkMcpServer extends MCPServer with ToolsSupport {
   final ModelTools _modelTools;
   final IconTools _iconTools;
   final DiscoverTool _discoverTool;
+  final ProjectValidator _formatter;
 
   SmartworkMcpServer(
     super.channel, {
@@ -34,6 +36,7 @@ base class SmartworkMcpServer extends MCPServer with ToolsSupport {
     ModelTools? modelTools,
     IconTools? iconTools,
     DiscoverTool? discoverTool,
+    ProjectValidator? formatter,
   })  : _doctorTool = doctorTool ?? DoctorTool(),
         _featureTools = featureTools ?? FeatureTools(),
         _serviceTools = serviceTools ?? ServiceTools(),
@@ -43,6 +46,7 @@ base class SmartworkMcpServer extends MCPServer with ToolsSupport {
         _modelTools = modelTools ?? ModelTools(),
         _iconTools = iconTools ?? IconTools(),
         _discoverTool = discoverTool ?? DiscoverTool(),
+        _formatter = formatter ?? ProjectValidator(),
         super.fromStreamChannel(
           implementation: Implementation(
             name: 'smartwork_mcp',
@@ -69,18 +73,35 @@ base class SmartworkMcpServer extends MCPServer with ToolsSupport {
   @override
   FutureOr<InitializeResult> initialize(InitializeRequest request) {
     registerTool(smartworkDoctorTool, _doctorTool.call);
-    registerTool(smartworkFeatureAddTool, _featureTools.add);
-    registerTool(smartworkFeatureRemoveTool, _featureTools.remove);
-    registerTool(smartworkServiceAddTool, _serviceTools.add);
-    registerTool(smartworkServiceRemoveTool, _serviceTools.remove);
+    registerTool(smartworkFeatureAddTool, _formatting(_featureTools.add));
+    registerTool(smartworkFeatureRemoveTool, _formatting(_featureTools.remove));
+    registerTool(smartworkServiceAddTool, _formatting(_serviceTools.add));
+    registerTool(smartworkServiceRemoveTool, _formatting(_serviceTools.remove));
     registerTool(smartworkInitPlanTool, _initTools.plan);
-    registerTool(smartworkInitApplyTool, _initTools.apply);
+    registerTool(smartworkInitApplyTool, _formatting(_initTools.apply));
     registerTool(smartworkTargetPlanTool, _targetTools.plan);
-    registerTool(smartworkTargetApplyTool, _targetTools.apply);
-    registerTool(smartworkSplashAddTool, _splashTools.add);
-    registerTool(smartworkModelFromJsonTool, _modelTools.fromJson);
-    registerTool(smartworkAppIconSetTool, _iconTools.set);
+    registerTool(smartworkTargetApplyTool, _formatting(_targetTools.apply));
+    registerTool(smartworkSplashAddTool, _formatting(_splashTools.add));
+    registerTool(smartworkModelFromJsonTool, _formatting(_modelTools.fromJson));
+    registerTool(smartworkAppIconSetTool, _formatting(_iconTools.set));
     registerTool(smartworkDiscoverTool, _discoverTool.call);
     return super.initialize(request);
+  }
+
+  /// Wraps a tool that generates code so every Dart file it writes is run
+  /// through `dart format` — generated code stays formatter-clean whatever
+  /// the feature/model names.
+  FutureOr<CallToolResult> Function(CallToolRequest) _formatting(
+    FutureOr<CallToolResult> Function(CallToolRequest) tool,
+  ) {
+    return (request) async {
+      late CallToolResult result;
+      final written = await FileWriter.recordDartWrites(() async {
+        result = await tool(request);
+      });
+      final projectPath = request.arguments?['projectPath'] as String? ?? '.';
+      await _formatter.formatDartFiles(projectPath, written);
+      return result;
+    };
   }
 }

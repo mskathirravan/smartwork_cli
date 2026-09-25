@@ -1,20 +1,38 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as path;
+
 import '../flutter/flutter_bootstrap.dart';
+import '../generator/pubspec_generator.dart';
+import 'project_validator.dart' show SdkUpdateHint;
 
 class EnvironmentCheck {
   final String label;
   final bool passed;
   final String? detail;
 
-  EnvironmentCheck({required this.label, required this.passed, this.detail});
+  /// The check could not reach a verdict (e.g. pub.dev unreachable), so it
+  /// is informational rather than a pass or a failure.
+  final bool inconclusive;
+
+  EnvironmentCheck({
+    required this.label,
+    required this.passed,
+    this.detail,
+    this.inconclusive = false,
+  });
 }
 
 class EnvironmentDoctor {
   final ProcessRunner _runProcess;
+  final Future<String> Function() _dependencyProbe;
 
-  EnvironmentDoctor({ProcessRunner? runProcess})
-      : _runProcess = runProcess ?? Process.run;
+  EnvironmentDoctor({
+    ProcessRunner? runProcess,
+    Future<String> Function()? dependencyProbe,
+  })  : _runProcess = runProcess ?? runSystemProcess,
+        _dependencyProbe =
+            dependencyProbe ?? PubspecGenerator().generateDependencyProbe;
 
   Future<List<EnvironmentCheck>> checkEnvironment() async {
     final results = <EnvironmentCheck>[await _checkVersionCommand('dart')];
@@ -48,7 +66,60 @@ class EnvironmentDoctor {
                   '${flutterResult.exitCode}.',
     ));
 
+    if (results.last.passed) {
+      results.add(await _checkPackageCompatibility());
+    }
+
     return results;
+  }
+
+  /// Resolves every package SmartWork can generate, at the versions it
+  /// would write, against the local Flutter SDK — the same `flutter pub get`
+  /// that `smartwork init` runs, without generating a project.
+  Future<EnvironmentCheck> _checkPackageCompatibility() async {
+    const label = 'Package compatibility';
+    final probeDir =
+        await Directory.systemTemp.createTemp('smartwork_doctor_probe_');
+    try {
+      await File(path.join(probeDir.path, 'pubspec.yaml'))
+          .writeAsString(await _dependencyProbe());
+      final result = await _runProcess(
+        'flutter',
+        ['pub', 'get'],
+        workingDirectory: probeDir.path,
+      );
+      if (result.exitCode == 0) {
+        return EnvironmentCheck(
+          label: label,
+          passed: true,
+          detail: 'Flutter SDK supports the package versions SmartWork uses',
+        );
+      }
+      final output = '${result.stdout}\n${result.stderr}'.trim();
+      if (SdkUpdateHint.isSdkTooOld(output)) {
+        return EnvironmentCheck(
+          label: label,
+          passed: false,
+          detail: SdkUpdateHint.message(output),
+        );
+      }
+      return EnvironmentCheck(
+        label: label,
+        passed: false,
+        inconclusive: true,
+        detail: 'Could not check (flutter pub get failed): '
+            '${_lastLine(output)}',
+      );
+    } on ProcessException catch (e) {
+      return EnvironmentCheck(
+        label: label,
+        passed: false,
+        inconclusive: true,
+        detail: 'Could not check: ${e.message}',
+      );
+    } finally {
+      await probeDir.delete(recursive: true);
+    }
   }
 
   Future<EnvironmentCheck> _checkVersionCommand(String executable) async {
@@ -78,6 +149,9 @@ class EnvironmentDoctor {
 
   String _formatExecutableName(String executable) =>
       executable[0].toUpperCase() + executable.substring(1);
+
+  String _lastLine(String output) =>
+      output.trim().split('\n').lastOrNull?.trim() ?? '';
 
   String _firstLine(String output) =>
       output.trim().split('\n').firstOrNull?.trim() ?? '';

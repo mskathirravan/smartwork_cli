@@ -4,10 +4,13 @@
 
 ## Requirements
 
-- **Dart SDK** `>=3.2.0 <4.0.0`
-- **Flutter SDK** — any working installation; SmartWork always invokes
-  the `flutter`/`dart` executables it finds on your shell's `PATH`, it
-  does not pin or download a specific version itself
+- **Dart SDK** `>=3.2.0 <4.0.0` (to run the SmartWork CLI itself)
+- **Flutter SDK** — the **latest stable** release. Generated projects use
+  the newest versions of their packages (e.g. `riverpod`, `google_fonts`,
+  `package_info_plus`), which require a recent Flutter SDK; older
+  Flutter versions are not supported. SmartWork always invokes the
+  `flutter`/`dart` executables it finds on your shell's `PATH`, it does
+  not pin or download a specific version itself
 
 Verify your environment:
 
@@ -17,7 +20,9 @@ flutter --version
 ```
 
 Once SmartWork is installed (see below), `smartwork doctor` re-checks
-both of these for you, plus whatever project you run it in.
+both of these for you — including whether your Flutter SDK can resolve
+the package versions SmartWork generates — plus whatever project you run
+it in.
 
 ## Flutter SDK Setup
 
@@ -119,10 +124,26 @@ smartwork update
 ```
 
 Updates the installed SmartWork CLI itself — never the current Flutter
-project. Runs `git pull` followed by `dart pub global activate --source
-path .` against this CLI's own source checkout: the same "from source"
-mechanism this repository actually supports today, since `smartwork_cli`
-isn't yet published on pub.dev.
+project:
+
+- **Installed from pub.dev** (`dart pub global activate smartwork_cli`):
+  re-activates the latest version from pub.dev.
+- **Installed from a source checkout** (`dart pub global activate
+  --source path .`): runs `git pull`, then re-activates from the
+  checkout.
+
+When a newer version is on pub.dev, every command — including
+`smartwork --help` — ends with a notice telling you to run
+`smartwork update`. SmartWork asks pub.dev at most once a day (cached in
+`~/.smartwork/update_check.json`), never slows a command down, and only
+shows the notice in a terminal.
+
+If you are on SmartWork 1.0.2 or earlier, `smartwork update` can't update
+a pub.dev install yet — run this once instead:
+
+```bash
+dart pub global activate smartwork_cli
+```
 
 ### Version
 

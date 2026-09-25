@@ -206,8 +206,7 @@ class TargetTools {
         operation: 'target_apply',
         projectPath: projectPath,
         code: 'validation_failed',
-        message: 'Project validation failed at the '
-            '"${e.result.phases.last.phase.label}" phase.',
+        message: e.details,
       );
     } catch (_) {
       return _unexpectedError('target_apply', projectPath);

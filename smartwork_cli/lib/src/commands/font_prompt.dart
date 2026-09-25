@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:smartwork_core/smartwork_core.dart';
 
+import 'choice_reader.dart';
+
 class FontSelection {
   final FontConfig fonts;
   final bool includeHomeSample;
@@ -22,27 +24,22 @@ class FontPrompt {
     print('  1. None');
     print('  2. Custom Font (from a local .ttf/.otf file)');
     print('  3. Google Font');
-    stdout.write('Select (1, 2, or 3): ');
-    final input = stdin.readLineSync()?.trim() ?? '';
-
-    switch (input) {
-      case '1':
-        return FontConfig.none();
-      case '2':
-        return FontConfig.custom(_promptCustomFont());
-      case '3':
-        return FontConfig.google(_promptGoogleFont());
-      default:
-        print('❌ Invalid selection. Using no font by default.');
-        return FontConfig.none();
-    }
+    final choice = readChoice(
+      'Select (1, 2, or 3): ',
+      FontType.values,
+    );
+    return switch (choice) {
+      FontType.none => FontConfig.none(),
+      FontType.custom => FontConfig.custom(_promptCustomFont()),
+      FontType.google => FontConfig.google(_promptGoogleFont()),
+    };
   }
 
   CustomFontConfig _promptCustomFont() {
     String family;
     while (true) {
       stdout.write('Font family name: ');
-      family = stdin.readLineSync()?.trim() ?? '';
+      family = readLineOrThrow().trim();
       if (family.isNotEmpty) break;
       print('❌ Font family name cannot be empty');
     }
@@ -50,7 +47,7 @@ class FontPrompt {
     String path;
     while (true) {
       stdout.write('Path to font file (.ttf or .otf): ');
-      path = stdin.readLineSync()?.trim() ?? '';
+      path = readLineOrThrow().trim();
       if (path.isNotEmpty) break;
       print('❌ Font file path cannot be empty');
     }
@@ -64,7 +61,7 @@ class FontPrompt {
   GoogleFontConfig _promptGoogleFont() {
     while (true) {
       stdout.write('Google Font family name (e.g., Roboto, Poppins, Lato): ');
-      final family = stdin.readLineSync()?.trim() ?? '';
+      final family = readLineOrThrow().trim();
       if (family.isNotEmpty) return GoogleFontConfig(family: family);
       print('❌ Font family name cannot be empty');
     }

@@ -55,10 +55,12 @@ class ServiceTools {
     final serviceId = request.arguments!['service'] as String;
 
     try {
+      final pubspecBefore = _readPubspec(projectPath);
       await _lifecycle.addService(
         projectPath: projectPath,
         serviceId: serviceId,
       );
+      final dependenciesChanged = _readPubspec(projectPath) != pubspecBefore;
 
       final service = Service.values.firstWhere((s) => s.id == serviceId);
       return _success(
@@ -70,6 +72,7 @@ class ServiceTools {
           'generatedFile':
               'lib/services/${service.folderName}/${service.fileName}',
           'bootstrapUpdated': service.hasInitialize,
+          ..._dependencyChange(dependenciesChanged),
         },
       );
     } on FileSystemException {
@@ -96,10 +99,12 @@ class ServiceTools {
     final serviceId = request.arguments!['service'] as String;
 
     try {
+      final pubspecBefore = _readPubspec(projectPath);
       await _lifecycle.removeService(
         projectPath: projectPath,
         serviceId: serviceId,
       );
+      final dependenciesChanged = _readPubspec(projectPath) != pubspecBefore;
 
       final service = Service.values.firstWhere((s) => s.id == serviceId);
       return _success(
@@ -109,6 +114,7 @@ class ServiceTools {
         result: {
           'displayName': service.displayName,
           'removedFolder': 'lib/services/${service.folderName}/',
+          ..._dependencyChange(dependenciesChanged),
         },
       );
     } on FileSystemException {
@@ -129,6 +135,22 @@ class ServiceTools {
       });
     }
   }
+
+  String? _readPubspec(String projectPath) {
+    final file = File(ProjectPaths(projectRoot: projectPath).pubspecFile);
+    return file.existsSync() ? file.readAsStringSync() : null;
+  }
+
+  /// pubspec.yaml dependencies changed, so the caller must run
+  /// `flutter pub get` — which fails on an out-of-date Flutter SDK.
+  Map<String, Object?> _dependencyChange(bool changed) => changed
+      ? {
+          'dependenciesChanged': true,
+          'nextStep': 'Run "flutter pub get" in the project. If it fails '
+              'because a package requires a newer SDK, the Flutter SDK is '
+              'too old: update Flutter ("flutter upgrade") and run it again.',
+        }
+      : const {};
 
   String _projectPath(CallToolRequest request) =>
       request.arguments?['projectPath'] as String? ?? '.';

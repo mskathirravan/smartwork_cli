@@ -70,6 +70,36 @@ void main() {
     });
 
     test(
+        'when flutter test itself fails, the exception carries its output '
+        'and, for an out-of-date SDK, the "update Flutter" hint', () async {
+      final lifecycle = CoverageCollectionLifecycle(
+        executionService: TestExecutionService(
+          runProcess: (executable, arguments, {workingDirectory}) async =>
+              ProcessResult(
+            0,
+            1,
+            '',
+            'Because demo_app depends on riverpod ^3.4.3 which requires SDK '
+                'version ^3.12.0, version solving failed.',
+          ),
+        ),
+      );
+
+      await expectLater(
+        lifecycle.collect(tempDir, 'auth'),
+        throwsA(isA<CoverageNotProducedException>().having(
+          (e) => e.toString(),
+          'toString',
+          allOf(
+            contains('did not produce'),
+            contains('riverpod ^3.4.3'),
+            contains('Flutter SDK is too old'),
+          ),
+        )),
+      );
+    });
+
+    test(
         'runs flutter test --coverage, reads the real lcov.info it '
         'wrote, and narrows the result to the requested feature', () async {
       final lifecycle = CoverageCollectionLifecycle(

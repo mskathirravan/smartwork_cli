@@ -38,7 +38,11 @@ class DoctorTool {
       for (final check in await _environmentDoctor.checkEnvironment()) {
         checks.add(_check(
           check.label,
-          check.passed ? DoctorCheckStatus.pass : DoctorCheckStatus.fail,
+          check.inconclusive
+              ? DoctorCheckStatus.info
+              : check.passed
+                  ? DoctorCheckStatus.pass
+                  : DoctorCheckStatus.fail,
           check.detail,
         ));
       }

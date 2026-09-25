@@ -457,6 +457,72 @@ void main() {
       });
 
       test(
+          'a validation failure caused by an out-of-date Flutter SDK '
+          'returns the pub get output and an "update Flutter" hint', () async {
+        final localController = StreamChannelController<String>();
+        final localServer = SmartworkMcpServer(
+          localController.foreign,
+          initTools: InitTools(
+            initializer: ProjectInitializer(
+              flutterBootstrap: _passingBootstrap(tempDir),
+              projectValidator: ProjectValidator(
+                runProcess: (executable, arguments, {workingDirectory}) async =>
+                    arguments.join(' ') == 'pub get'
+                        ? ProcessResult(
+                            0,
+                            1,
+                            '',
+                            'Because app depends on riverpod ^3.4.3 which '
+                                'requires SDK version ^3.12.0, version '
+                                'solving failed.',
+                          )
+                        : ProcessResult(0, 0, '', ''),
+              ),
+            ),
+          ),
+        );
+        final localClient =
+            MCPClient(Implementation(name: 'test-client', version: '0.0.1'));
+        final localConnection =
+            localClient.connectServer(localController.local);
+        await localConnection.initialize(InitializeRequest(
+          protocolVersion: ProtocolVersion.latestSupported,
+          capabilities: ClientCapabilities(),
+          clientInfo: Implementation(name: 'test-client', version: '0.0.1'),
+        ));
+        localConnection.notifyInitialized();
+        await localServer.initialized;
+
+        final applyResult = await localConnection.callTool(CallToolRequest(
+          name: 'smartwork_init_apply',
+          arguments: {
+            'projectPath': tempDir.path,
+            'plan': {
+              'projectName': 'demo_app',
+              'appTargets': ['android'],
+              'architecture': 'cleanArchitecture',
+              'stateManagement': 'riverpod',
+              'network': 'http',
+              'storage': 'sharedPreferences',
+              'services': [],
+              'initialFeatures': ['home'],
+            },
+            'confirm': true,
+          },
+        ));
+
+        expect(applyResult.isError, isTrue);
+        final error = applyResult.structuredContent!['error'] as Map;
+        expect(error['code'], 'validation_failed');
+        expect(error['message'], contains('"Dependencies" phase'));
+        expect(error['message'], contains('Flutter SDK is too old'));
+        expect(error['message'], contains('riverpod ^3.4.3'));
+
+        await localClient.shutdown();
+        await localServer.shutdown();
+      });
+
+      test(
           'an unexpected exception is handled safely, with no stack '
           'trace exposed', () async {
         final localController = StreamChannelController<String>();

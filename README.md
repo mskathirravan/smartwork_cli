@@ -87,8 +87,15 @@ smartwork service add analytics
 smartwork doctor
 ```
 
-See [Getting Started](docs/getting-started.md) for full requirements,
-Flutter SDK setup (including FVM), and installation details.
+**Debug screen:** in the generated app (debug builds only), tap the
+version text on the Home screen 10 times to open it — switch
+Environment and Theme, or send a test notification. See
+[Open the Debug screen](docs/project-generation.md#open-the-debug-screen).
+
+SmartWork requires the **latest stable Flutter SDK** — generated projects
+use the newest package versions, which older Flutter releases can't
+resolve. See [Getting Started](docs/getting-started.md) for full
+requirements, Flutter SDK setup (including FVM), and installation details.
 
 ## Commands
 

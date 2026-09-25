@@ -7,6 +7,7 @@ import 'confirmation_reader.dart';
 import 'configuration_display.dart';
 import 'configuration_prompt.dart';
 import 'init_safety_check.dart';
+import 'validation_report.dart';
 
 class InitCommand extends Command {
   final String projectPath;
@@ -132,9 +133,8 @@ class InitCommand extends Command {
     print('\n📝 Generating project...');
     print('✔ Project configuration created');
     print('✔ pubspec.yaml updated with SmartWork dependencies');
-    print('✔ Architecture: ${_formatEnumName(config.architecture.name)}');
-    print(
-        '✔ State management: ${_formatEnumName(config.stateManagement.name)}');
+    print('✔ Architecture: ${configLabel(config.architecture)}');
+    print('✔ State management: ${configLabel(config.stateManagement)}');
     if (includeFontSample) {
       print('✔ Font sample: lib/shared/ui/font_sample.dart added to Home.');
     }
@@ -146,9 +146,7 @@ class InitCommand extends Command {
     }
 
     print('\nSmartWork Project Validation\n');
-    for (final phase in (result?.validation.phases ?? failure!.result.phases)) {
-      print('${phase.passed ? '✓' : '✗'} ${phase.phase.label}');
-    }
+    printValidationPhases(result?.validation.phases ?? failure!.result.phases);
     print('');
 
     if (failure != null) {
@@ -175,14 +173,5 @@ class InitCommand extends Command {
     final minutes = elapsed.inMinutes;
     final seconds = elapsed.inSeconds % 60;
     return '${minutes}m ${seconds.toString().padLeft(2, '0')}s';
-  }
-
-  String _formatEnumName(String name) {
-    return name
-        .replaceAllMapped(
-            RegExp(r'([a-z])([A-Z])'), (m) => '${m.group(1)} ${m.group(2)}')
-        .split(' ')
-        .map((word) => word[0].toUpperCase() + word.substring(1))
-        .join(' ');
   }
 }

@@ -136,6 +136,32 @@ class PubspecGenerator {
     return buffer.toString();
   }
 
+  /// A throwaway pubspec depending on every package SmartWork can generate,
+  /// at the versions it would write. `smartwork doctor` runs
+  /// `flutter pub get` on it to check the local Flutter SDK can resolve
+  /// them.
+  Future<String> generateDependencyProbe() async {
+    final buffer = StringBuffer()
+      ..writeln('name: smartwork_dependency_probe')
+      ..writeln("publish_to: 'none'")
+      ..writeln()
+      ..writeln('environment:')
+      ..writeln('  sdk: ^3.0.0')
+      ..writeln()
+      ..writeln('dependencies:');
+    for (final package in ['flutter', 'flutter_localizations']) {
+      await _writeDependency(buffer, package);
+    }
+    for (final package in _managedPackages) {
+      await _writeDependency(buffer, package);
+    }
+    buffer
+      ..writeln()
+      ..writeln('dev_dependencies:');
+    await _writeDependency(buffer, 'flutter_test');
+    return buffer.toString();
+  }
+
   static const List<String> _assetLines = [
     '  assets:',
     '    - assets/images/',
@@ -218,10 +244,18 @@ class PubspecGenerator {
   String _removeStaleManagedDependencies(String content, Set<String> desired) {
     final packageLine = RegExp(r'^  ([A-Za-z0-9_]+):');
     final lines = content.split('\n');
-    final kept = <String>[
-      for (final line in lines)
-        if (!_isStaleManagedDependencyLine(line, packageLine, desired)) line,
-    ];
+    final kept = <String>[];
+    var removingBlock = false;
+    for (final line in lines) {
+      // A removed entry's nested lines (e.g. `    sdk: flutter` under
+      // `  flutter_localizations:`) go with it; leaving them behind would
+      // attach them to the previous entry and corrupt the YAML.
+      if (removingBlock && line.startsWith('    ') && line.trim().isNotEmpty) {
+        continue;
+      }
+      removingBlock = _isStaleManagedDependencyLine(line, packageLine, desired);
+      if (!removingBlock) kept.add(line);
+    }
     return kept.join('\n');
   }
 

@@ -8,7 +8,7 @@ class UpdateCommand extends Command {
   final Directory? _sourceDirectoryOverride;
 
   UpdateCommand({ProcessRunner? runProcess, Directory? sourceDirectory})
-      : _runProcess = runProcess ?? Process.run,
+      : _runProcess = runProcess ?? runSystemProcess,
         _sourceDirectoryOverride = sourceDirectory;
 
   @override
@@ -23,6 +23,18 @@ class UpdateCommand extends Command {
       _sourceDirectoryOverride ??
       Directory.fromUri(Platform.script.resolve('..'));
 
+  /// A `dart pub global activate smartwork_cli` (pub.dev) install: pub's
+  /// global package folder holds the snapshot and a pubspec.lock recording
+  /// smartwork_cli as a hosted package — never a source checkout.
+  bool _looksLikePubDevInstall(Directory dir) {
+    final lock = File('${dir.path}/pubspec.lock');
+    if (!lock.existsSync()) return false;
+    return RegExp(
+      r'^  smartwork_cli:\n(?:    .*\n)*?    source: hosted$',
+      multiLine: true,
+    ).hasMatch(lock.readAsStringSync());
+  }
+
   bool _looksLikeSmartworkCliCheckout(Directory dir) {
     final pubspec = File('${dir.path}/pubspec.yaml');
     if (!pubspec.existsSync()) return false;
@@ -34,14 +46,17 @@ class UpdateCommand extends Command {
   Future<void> run() async {
     final sourceDir = _sourceDirectory;
 
+    if (_looksLikePubDevInstall(sourceDir)) {
+      await _updateFromPubDev();
+      return;
+    }
+
     if (!_looksLikeSmartworkCliCheckout(sourceDir)) {
       print(
-        'smartwork update: could not locate smartwork_cli\'s own source '
-        'checkout (expected a pubspec.yaml declaring "name: smartwork_cli" '
-        'under ${sourceDir.path}). If this CLI was relocated outside its '
-        'source checkout, update it manually: pull the latest source and '
-        'run "dart pub global activate --source path ." from '
-        'smartwork_cli/.',
+        'smartwork update: could not tell how this CLI was installed (no '
+        'smartwork_cli source checkout or pub.dev install under '
+        '${sourceDir.path}). Update it manually:\n'
+        '  dart pub global activate smartwork_cli',
       );
       exitCode = 1;
       return;
@@ -80,6 +95,28 @@ class UpdateCommand extends Command {
     }
 
     print('SmartWork CLI updated successfully.');
+  }
+
+  Future<void> _updateFromPubDev() async {
+    print('Updating SmartWork CLI from pub.dev ...');
+
+    final activate = await _runProcess(
+      'dart',
+      ['pub', 'global', 'activate', 'smartwork_cli'],
+    );
+    _relay(activate);
+    if (activate.exitCode != 0) {
+      print(
+        'smartwork update failed while activating the latest version from '
+        'pub.dev. See the output above for details.',
+      );
+      exitCode = activate.exitCode;
+      return;
+    }
+
+    print(activate.stdout.toString().contains('already activated at newest')
+        ? 'SmartWork CLI is already up to date.'
+        : 'SmartWork CLI updated successfully.');
   }
 
   void _relay(ProcessResult result) {

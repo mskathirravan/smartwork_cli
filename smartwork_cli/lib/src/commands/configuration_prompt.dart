@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:smartwork_core/smartwork_core.dart';
 
+import 'choice_reader.dart';
 import 'feature_recommendations.dart';
 import 'font_prompt.dart';
 import 'localization_prompt.dart';
@@ -61,7 +62,7 @@ class ConfigurationPrompt {
   String _promptProjectName() {
     while (true) {
       stdout.write('Project name (e.g., my_app): ');
-      final input = stdin.readLineSync()?.trim() ?? '';
+      final input = readLineOrThrow().trim();
 
       if (input.isEmpty) {
         print('❌ Project name cannot be empty');
@@ -88,15 +89,10 @@ class ConfigurationPrompt {
     for (final type in ProjectType.values) {
       print('  ${type.index + 1}. ${type.displayName}');
     }
-    stdout.write('\nSelect (1-${ProjectType.values.length}): ');
-    final index = int.tryParse(stdin.readLineSync()?.trim() ?? '');
-
-    if (index != null && index >= 1 && index <= ProjectType.values.length) {
-      return ProjectType.values[index - 1];
-    }
-
-    print('❌ Invalid selection. Using Custom by default.');
-    return ProjectType.custom;
+    return readChoice(
+      '\nSelect (1-${ProjectType.values.length}): ',
+      ProjectType.values,
+    );
   }
 
   Set<AppTarget> _promptAppTargets() {
@@ -106,7 +102,7 @@ class ConfigurationPrompt {
     }
     while (true) {
       stdout.write('\nSelect one or more targets (e.g. 1,3,5): ');
-      final input = stdin.readLineSync() ?? '';
+      final input = readLineOrThrow();
       try {
         return AppTargetSelection.parse(input);
       } on InvalidAppTargetSelectionException catch (e) {
@@ -120,20 +116,10 @@ class ConfigurationPrompt {
     print('  1. Clean Architecture');
     print('  2. MVVM');
     print('  3. MVP');
-    stdout.write('Select (1, 2, or 3): ');
-    final input = stdin.readLineSync()?.trim() ?? '';
-
-    switch (input) {
-      case '1':
-        return Architecture.cleanArchitecture;
-      case '2':
-        return Architecture.mvvm;
-      case '3':
-        return Architecture.mvp;
-      default:
-        print('❌ Invalid selection. Using Clean Architecture by default.');
-        return Architecture.cleanArchitecture;
-    }
+    return readChoice(
+      'Select (1, 2, or 3): ',
+      [Architecture.cleanArchitecture, Architecture.mvvm, Architecture.mvp],
+    );
   }
 
   StateManagement _promptStateManagement() {
@@ -142,22 +128,15 @@ class ConfigurationPrompt {
     print('  2. Cubit');
     print('  3. GetX');
     print('  4. Riverpod');
-    stdout.write('Select (1, 2, 3, or 4): ');
-    final input = stdin.readLineSync()?.trim() ?? '';
-
-    switch (input) {
-      case '1':
-        return StateManagement.bloc;
-      case '2':
-        return StateManagement.cubit;
-      case '3':
-        return StateManagement.getx;
-      case '4':
-        return StateManagement.riverpod;
-      default:
-        print('❌ Invalid selection. Using BLoC by default.');
-        return StateManagement.bloc;
-    }
+    return readChoice(
+      'Select (1, 2, 3, or 4): ',
+      [
+        StateManagement.bloc,
+        StateManagement.cubit,
+        StateManagement.getx,
+        StateManagement.riverpod,
+      ],
+    );
   }
 
   Network _promptNetwork() {
@@ -166,20 +145,10 @@ class ConfigurationPrompt {
     print('  2. Dio');
     print('  3. Other (bring your own — SmartWork adds no dependency '
         'and generates no networking code)');
-    stdout.write('Select (1, 2, or 3): ');
-    final input = stdin.readLineSync()?.trim() ?? '';
-
-    switch (input) {
-      case '1':
-        return Network.http;
-      case '2':
-        return Network.dio;
-      case '3':
-        return Network.other;
-      default:
-        print('❌ Invalid selection. Using HTTP by default.');
-        return Network.http;
-    }
+    return readChoice(
+      'Select (1, 2, or 3): ',
+      [Network.http, Network.dio, Network.other],
+    );
   }
 
   Storage _promptStorage() {
@@ -188,20 +157,10 @@ class ConfigurationPrompt {
     print('  2. Hive');
     print('  3. Other (bring your own — SmartWork adds no dependency '
         'and generates no persistence code)');
-    stdout.write('Select (1, 2, or 3): ');
-    final input = stdin.readLineSync()?.trim() ?? '';
-
-    switch (input) {
-      case '1':
-        return Storage.sharedPreferences;
-      case '2':
-        return Storage.hive;
-      case '3':
-        return Storage.other;
-      default:
-        print('❌ Invalid selection. Using SharedPreferences by default.');
-        return Storage.sharedPreferences;
-    }
+    return readChoice(
+      'Select (1, 2, or 3): ',
+      [Storage.sharedPreferences, Storage.hive, Storage.other],
+    );
   }
 
   Set<Service> _promptServices() {
@@ -248,7 +207,7 @@ class ConfigurationPrompt {
   List<String> _promptInitialFeaturesFreeText() {
     print('\nInitial Features (comma-separated):');
     stdout.write('Feature names (e.g., home, profile, settings): ');
-    final input = stdin.readLineSync()?.trim() ?? '';
+    final input = readLineOrThrow().trim();
 
     if (input.isEmpty) {
       print('❌ At least one feature is required');

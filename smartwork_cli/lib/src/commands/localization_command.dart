@@ -4,17 +4,21 @@ import 'package:args/command_runner.dart';
 import 'package:smartwork_core/smartwork_core.dart';
 
 import 'localization_prompt.dart';
+import 'validation_report.dart';
 
 typedef LocalizationPromptReader = LocalizationConfig Function();
 
 class LocalizationCommand extends Command {
   final String projectPath;
   final LocalizationPromptReader _promptLocalization;
+  final ProjectValidator _projectValidator;
 
   LocalizationCommand({
     this.projectPath = '.',
     LocalizationPromptReader? promptLocalization,
-  }) : _promptLocalization = promptLocalization ?? LocalizationPrompt().prompt;
+    ProjectValidator? projectValidator,
+  })  : _promptLocalization = promptLocalization ?? LocalizationPrompt().prompt,
+        _projectValidator = projectValidator ?? ProjectValidator();
 
   @override
   final name = 'localization';
@@ -34,11 +38,14 @@ class LocalizationCommand extends Command {
     }
 
     final localization = _promptLocalization();
+    final pubspecBefore = readPubspec(projectPath);
     await LocalizationLifecycle().updateLocalization(
       projectPath: projectPath,
       localization: localization,
     );
     _reportSuccess(localization);
+    await resolveChangedDependencies(
+        projectPath, pubspecBefore, _projectValidator);
   }
 
   void _reportSuccess(LocalizationConfig localization) {

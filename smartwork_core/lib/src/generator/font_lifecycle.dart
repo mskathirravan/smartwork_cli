@@ -92,9 +92,14 @@ class FontLifecycle {
     final fileWriter = FileWriter();
     final sampleFile = File(paths.sharedUiFile('font_sample.dart'));
 
-    if (!includeSample || config.fonts.type == FontType.none) {
+    final removeSample = !includeSample || config.fonts.type == FontType.none;
+    if (removeSample && !_isFontSampleUsed(paths, sampleFile)) {
       await _deleteIfExists(sampleFile);
     } else {
+      // Also rewritten (for the current font) when removal was asked for
+      // but the project's own code still uses FontSample — e.g. a Home
+      // page generated with the sample — since SmartWork never edits that
+      // code, deleting the file would stop the project compiling.
       await fileWriter.write(
         sampleFile.path,
         TemplateEngine().render(
@@ -108,6 +113,21 @@ class FontLifecycle {
         .regenerateSharedUiBarrel();
 
     return sampleFile.existsSync();
+  }
+
+  /// Whether any Dart file under lib/ or test/, other than the sample
+  /// itself, uses `FontSample`.
+  bool _isFontSampleUsed(ProjectPaths paths, File sampleFile) {
+    for (final dir in [paths.lib, paths.test]) {
+      final root = Directory(dir);
+      if (!root.existsSync()) continue;
+      for (final entity in root.listSync(recursive: true)) {
+        if (entity is! File || !entity.path.endsWith('.dart')) continue;
+        if (entity.absolute.path == sampleFile.absolute.path) continue;
+        if (entity.readAsStringSync().contains('FontSample(')) return true;
+      }
+    }
+    return false;
   }
 
   Future<void> _deleteIfExists(File file) async {

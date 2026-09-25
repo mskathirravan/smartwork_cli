@@ -173,7 +173,126 @@ void main() {
 
       expect(ran, isFalse);
       expect(exitCode, isNot(0));
-      expect(output.join('\n'), contains('could not locate'));
+      expect(output.join('\n'), contains('could not tell how this CLI'));
+      expect(output.join('\n'),
+          contains('dart pub global activate smartwork_cli'));
+    });
+
+    group('installed from pub.dev', () {
+      late Directory globalPackage;
+
+      setUp(() {
+        // The layout `dart pub global activate smartwork_cli` leaves in
+        // ~/.pub-cache/global_packages/smartwork_cli/: a snapshot and a
+        // pubspec.lock recording smartwork_cli as hosted — no pubspec.yaml.
+        globalPackage =
+            Directory.systemTemp.createTempSync('smartwork_update_hosted_');
+        File('${globalPackage.path}/pubspec.lock').writeAsStringSync('''
+packages:
+  smartwork_cli:
+    dependency: "direct main"
+    description:
+      name: smartwork_cli
+      sha256: "2a249e6e"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
+  smartwork_core:
+    dependency: transitive
+    description:
+      name: smartwork_core
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.2"
+''');
+      });
+
+      tearDown(() => globalPackage.deleteSync(recursive: true));
+
+      test(
+          're-activates the latest smartwork_cli from pub.dev — never runs '
+          'git', () async {
+        final calls = <String>[];
+
+        final (output, exitCode) = await _run(
+          UpdateCommand(
+            sourceDirectory: globalPackage,
+            runProcess: (executable, arguments, {workingDirectory}) async {
+              calls.add('$executable ${arguments.join(' ')}');
+              return ProcessResult(0, 0, 'Activated smartwork_cli 1.0.3.', '');
+            },
+          ),
+        );
+
+        expect(calls, ['dart pub global activate smartwork_cli']);
+        expect(exitCode, 0);
+        expect(output, contains('Activated smartwork_cli 1.0.3.'));
+        expect(output.join('\n'), contains('updated successfully'));
+      });
+
+      test('says "already up to date" when pub.dev has nothing newer',
+          () async {
+        final (output, exitCode) = await _run(
+          UpdateCommand(
+            sourceDirectory: globalPackage,
+            runProcess: (executable, arguments, {workingDirectory}) async =>
+                ProcessResult(
+              0,
+              0,
+              'The package smartwork_cli is already activated at newest '
+                  'available version.\nActivated smartwork_cli 1.0.2.',
+              '',
+            ),
+          ),
+        );
+
+        expect(exitCode, 0);
+        expect(output, contains('SmartWork CLI is already up to date.'));
+      });
+
+      test('reports a failed activation (e.g. offline) with a non-zero exit',
+          () async {
+        final (output, exitCode) = await _run(
+          UpdateCommand(
+            sourceDirectory: globalPackage,
+            runProcess: (executable, arguments, {workingDirectory}) async =>
+                ProcessResult(0, 69, '', 'Got socket error.'),
+          ),
+        );
+
+        expect(exitCode, 69);
+        expect(output, contains('Got socket error.'));
+        expect(output.join('\n'), contains('update failed'));
+      });
+
+      test(
+          'a path-activated install\'s pubspec.lock (source: path) is not '
+          'mistaken for a pub.dev install', () async {
+        File('${globalPackage.path}/pubspec.lock').writeAsStringSync('''
+packages:
+  smartwork_cli:
+    dependency: "direct main"
+    description:
+      path: "/src/smartwork/smartwork_cli"
+      relative: false
+    source: path
+    version: "1.0.2"
+''');
+        var ran = false;
+
+        final (_, exitCode) = await _run(
+          UpdateCommand(
+            sourceDirectory: globalPackage,
+            runProcess: (executable, arguments, {workingDirectory}) async {
+              ran = true;
+              return ProcessResult(0, 0, '', '');
+            },
+          ),
+        );
+
+        expect(ran, isFalse);
+        expect(exitCode, isNot(0));
+      });
     });
   });
 }

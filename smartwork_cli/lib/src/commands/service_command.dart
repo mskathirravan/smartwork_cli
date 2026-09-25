@@ -3,10 +3,14 @@ import 'dart:io';
 import 'package:args/command_runner.dart';
 import 'package:smartwork_core/smartwork_core.dart';
 
+import 'validation_report.dart';
+
 class ServiceCommand extends Command {
   final String projectPath;
+  final ProjectValidator _projectValidator;
 
-  ServiceCommand({this.projectPath = '.'});
+  ServiceCommand({this.projectPath = '.', ProjectValidator? projectValidator})
+      : _projectValidator = projectValidator ?? ProjectValidator();
 
   @override
   final name = 'service';
@@ -44,6 +48,7 @@ class ServiceCommand extends Command {
       return;
     }
     final serviceId = args[1];
+    final pubspecBefore = readPubspec(projectPath);
 
     try {
       if (action == 'add') {
@@ -59,6 +64,8 @@ class ServiceCommand extends Command {
         );
         _reportRemoveSuccess(serviceId);
       }
+      await resolveChangedDependencies(
+          projectPath, pubspecBefore, _projectValidator);
     } on FileSystemException {
       print('❌ No Smartwork project found in the current directory.');
       print('   Run "smartwork init" first.');

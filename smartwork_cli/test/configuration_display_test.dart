@@ -115,4 +115,23 @@ void main() {
       contains('Localization:           Enabled (en, fr, de; default: fr)'),
     );
   });
+
+  test('the summary uses the same labels as the prompts (MVVM, GetX, ...)',
+      () async {
+    final lines = await _captureOutput(
+      () => ConfigurationDisplay().displaySummary(ProjectConfig(
+        projectName: 'demo_app',
+        architecture: Architecture.mvvm,
+        stateManagement: StateManagement.getx,
+        network: Network.http,
+        storage: Storage.sharedPreferences,
+        initialFeatures: ['home'],
+      )),
+    );
+
+    expect(lines, contains('Architecture:           MVVM'));
+    expect(lines, contains('State Management:       GetX'));
+    expect(lines, contains('Network:                HTTP'));
+    expect(lines, contains('Storage:                SharedPreferences'));
+  });
 }

@@ -5,6 +5,7 @@ import 'package:smartwork_core/smartwork_core.dart';
 
 import 'confirmation_reader.dart';
 import 'target_selection_reader.dart';
+import 'validation_report.dart';
 
 class TargetCommand extends Command {
   final String projectPath;
@@ -149,9 +150,7 @@ class TargetCommand extends Command {
 
     print('\nSmartWork Project Validation\n');
     final phases = (result?.validation.phases ?? failure!.result.phases);
-    for (final phase in phases) {
-      print('${phase.passed ? '✓' : '✗'} ${phase.phase.label}');
-    }
+    printValidationPhases(phases);
     print('');
 
     if (failure != null) {

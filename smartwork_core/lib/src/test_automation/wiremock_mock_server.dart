@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../flutter/flutter_bootstrap.dart' show ProcessRunner;
+import '../flutter/flutter_bootstrap.dart' show ProcessRunner, runSystemProcess;
 import '../models/mock_mapping.dart';
 import 'mock_server.dart';
 import 'mock_server_http.dart';
@@ -25,7 +25,7 @@ class WireMockMockServer implements MockServer {
     this.readyTimeout = const Duration(seconds: 15),
     this.pollInterval = const Duration(milliseconds: 300),
   })  : baseUrl = baseUrl ?? Uri.parse('http://localhost:8080'),
-        _runProcess = runProcess ?? Process.run,
+        _runProcess = runProcess ?? runSystemProcess,
         _httpCall = httpCall ?? realMockServerHttpCall,
         _scriptGenerator = scriptGenerator ?? WireMockScriptGenerator();
 

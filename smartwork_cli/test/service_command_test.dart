@@ -19,9 +19,25 @@ Future<List<String>> _captureOutput(Future<void> Function() body) async {
   return lines;
 }
 
-Future<int> _runServiceCommand(String projectPath, List<String> args) async {
+/// Stands in for `flutter pub get` so these tests never run real Flutter.
+ProjectValidator _validator({ProcessResult? pubGet, List<String>? calls}) =>
+    ProjectValidator(
+      runProcess: (executable, arguments, {workingDirectory}) async {
+        calls?.add('$executable ${arguments.join(' ')}');
+        return pubGet ?? ProcessResult(0, 0, '', '');
+      },
+    );
+
+Future<int> _runServiceCommand(
+  String projectPath,
+  List<String> args, {
+  ProjectValidator? validator,
+}) async {
   final runner = CommandRunner('smartwork', 'test')
-    ..addCommand(ServiceCommand(projectPath: projectPath));
+    ..addCommand(ServiceCommand(
+      projectPath: projectPath,
+      projectValidator: validator ?? _validator(),
+    ));
   final previousExitCode = exitCode;
   exitCode = 0;
   await runner.run(['service', ...args]);
@@ -56,6 +72,32 @@ void main() {
     });
 
     tearDown(() => tempDir.deleteSync(recursive: true));
+
+    test(
+        'adding a service with a package (forceUpdate → package_info_plus) '
+        'runs flutter pub get; one without a package does not', () async {
+      final calls = <String>[];
+      await _captureOutput(() async {
+        await _runServiceCommand(
+          projectPath,
+          ['add', 'analytics'],
+          validator: _validator(calls: calls),
+        );
+      });
+      expect(calls, isEmpty);
+
+      late int code;
+      final output = await _captureOutput(() async {
+        code = await _runServiceCommand(
+          projectPath,
+          ['add', 'forceUpdate'],
+          validator: _validator(calls: calls),
+        );
+      });
+      expect(code, 0);
+      expect(calls, ['flutter pub get']);
+      expect(output, contains('✔ Dependencies resolved (flutter pub get).'));
+    });
 
     test('add generates the service and reports Bootstrap wiring', () async {
       late int code;

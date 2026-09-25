@@ -11,7 +11,7 @@ import 'dart:io';
 /// never a copy of the source `pubspec.yaml`, so the filesystem search
 /// below always misses for a globally-activated install — which is how
 /// real users actually run this CLI.
-const String fallbackSmartworkCliVersion = '1.0.2';
+const String fallbackSmartworkCliVersion = '1.0.3';
 
 String? readSmartworkCliVersion({Directory? workingDirectory}) {
   final candidates = <File>[];

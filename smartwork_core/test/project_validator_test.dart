@@ -49,15 +49,15 @@ void main() {
       expect(result.passed, isTrue);
       expect(result.phases.map((p) => p.phase), [
         ValidationPhase.platforms,
-        ValidationPhase.format,
         ValidationPhase.dependencies,
+        ValidationPhase.format,
         ValidationPhase.analyze,
         ValidationPhase.tests,
       ]);
       expect(result.phases.every((p) => p.passed), isTrue);
       expect(fake.calls, [
-        _formatCmd.split(' '),
         _pubGetCmd.split(' '),
+        _formatCmd.split(' '),
         _analyzeCmd.split(' '),
         _testCmd.split(' '),
       ]);
@@ -72,8 +72,8 @@ void main() {
       expect(result.passed, isFalse);
       expect(result.phases.map((p) => p.phase), [
         ValidationPhase.platforms,
-        ValidationPhase.format,
         ValidationPhase.dependencies,
+        ValidationPhase.format,
         ValidationPhase.analyze,
       ]);
       expect(result.phases.last.passed, isFalse);
@@ -82,25 +82,27 @@ void main() {
     });
 
     test(
-        'a failing Format phase stops immediately — dependencies, '
-        'analyze, and tests never run', () async {
+        'a failing Format phase stops immediately — analyze and tests '
+        'never run', () async {
       final fake = _FakeProcess({_formatCmd: 1});
       final validator = ProjectValidator(runProcess: fake.run);
 
       final result = await validator.validate('/some/project', appTargets: {});
 
       expect(result.passed, isFalse);
-      expect(result.phases, hasLength(2));
+      expect(result.phases, hasLength(3));
       expect(result.phases.first.phase, ValidationPhase.platforms);
       expect(result.phases.first.passed, isTrue);
+      expect(result.phases[1].phase, ValidationPhase.dependencies);
+      expect(result.phases[1].passed, isTrue);
       expect(result.phases.last.phase, ValidationPhase.format);
       expect(result.phases.last.passed, isFalse);
-      expect(fake.calls, hasLength(1));
+      expect(fake.calls, hasLength(2));
     });
 
     test(
-        'a failing Tests phase is reported after Platforms/Format/'
-        'Dependencies/Analyze all passed', () async {
+        'a failing Tests phase is reported after Platforms/Dependencies/'
+        'Format/Analyze all passed', () async {
       final fake = _FakeProcess({_testCmd: 1});
       final validator = ProjectValidator(runProcess: fake.run);
 
@@ -145,7 +147,7 @@ void main() {
       final result = await validator.validate('/some/project', appTargets: {});
 
       expect(result.passed, isFalse);
-      expect(result.phases.last.phase, ValidationPhase.format);
+      expect(result.phases.last.phase, ValidationPhase.dependencies);
       expect(result.phases.last.passed, isFalse);
     });
 
@@ -342,6 +344,80 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(fake.calls, isNot(contains(_genL10nCmd.split(' '))));
+    });
+  });
+
+  group('ProjectValidator — out-of-date Flutter SDK', () {
+    ProjectValidator failingPubGet(String stderr) => ProjectValidator(
+          runProcess: (executable, arguments, {workingDirectory}) async =>
+              arguments.join(' ') == 'pub get'
+                  ? ProcessResult(0, 1, '', stderr)
+                  : ProcessResult(0, 0, '', ''),
+        );
+
+    test(
+        'a pub get failure caused by a package needing a newer Dart SDK '
+        'carries an "update Flutter" hint naming the current version',
+        () async {
+      final result = await failingPubGet(
+        'The current Dart SDK version is 3.6.0.\n\n'
+        'Because app depends on google_fonts >=6.3.1 which requires SDK '
+        'version >=3.7.0 <4.0.0, version solving failed.',
+      ).validate('/some/project', appTargets: {});
+
+      final failed = result.phases.last;
+      expect(failed.phase, ValidationPhase.dependencies);
+      expect(failed.hint, contains('Flutter SDK is too old'));
+      expect(failed.hint, contains('your Dart SDK is 3.6.0'));
+      expect(failed.hint, contains('flutter upgrade'));
+    });
+
+    test(
+        'a pub get failure caused by a Flutter-SDK-pinned package (e.g. '
+        'meta pinned by flutter_test) carries the same hint', () async {
+      final result = await failingPubGet(
+        'Note: meta is pinned to version 1.15.0 by flutter_test from the '
+        'flutter SDK.\nBecause every version of flutter_test from sdk '
+        'depends on meta 1.15.0 and app depends on meta ^1.19.0, '
+        'flutter_test from sdk is forbidden.',
+      ).validate('/some/project', appTargets: {});
+
+      expect(result.phases.last.hint, contains('Flutter SDK is too old'));
+    });
+
+    test('an unrelated pub get failure (e.g. offline) carries no hint',
+        () async {
+      final result = await failingPubGet(
+        'Got socket error trying to find package dio at https://pub.dev.',
+      ).validate('/some/project', appTargets: {});
+
+      expect(result.phases.last.passed, isFalse);
+      expect(result.phases.last.hint, isNull);
+    });
+
+    test(
+        'Dependencies runs before Format, so an out-of-date SDK is reported '
+        'as such rather than as formatter style drift', () async {
+      final fake = _FakeProcess({_pubGetCmd: 1, _formatCmd: 1});
+      final validator = ProjectValidator(runProcess: fake.run);
+
+      final result = await validator.validate('/some/project', appTargets: {});
+
+      expect(result.phases.last.phase, ValidationPhase.dependencies);
+      expect(fake.calls, [_pubGetCmd.split(' ')]);
+    });
+
+    test('ProjectValidationFailedException.details includes hint and output',
+        () async {
+      final result = await failingPubGet(
+        'Because app depends on riverpod ^3.4.3 which requires SDK version '
+        '^3.12.0, version solving failed.',
+      ).validate('/some/project', appTargets: {});
+
+      final details = ProjectValidationFailedException(result).details;
+      expect(details, contains('"Dependencies" phase'));
+      expect(details, contains('flutter upgrade'));
+      expect(details, contains('riverpod ^3.4.3'));
     });
   });
 

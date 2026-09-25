@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../flutter/flutter_bootstrap.dart' show ProcessRunner;
+import '../flutter/flutter_bootstrap.dart' show ProcessRunner, runSystemProcess;
 import '../models/mock_mapping.dart';
 import '../models/test_result.dart';
 import 'mock_server.dart';
@@ -10,7 +10,7 @@ class TestExecutionService {
   final ProcessRunner _runProcess;
 
   TestExecutionService({ProcessRunner? runProcess})
-      : _runProcess = runProcess ?? Process.run;
+      : _runProcess = runProcess ?? runSystemProcess;
 
   Future<TestSuiteResult> run({
     required String projectPath,
