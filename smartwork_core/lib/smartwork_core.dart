@@ -1,3 +1,13 @@
+/// The engine behind the SmartWork CLI and MCP server: it generates and
+/// maintains Flutter projects with a consistent architecture.
+///
+/// Start with `ProjectConfig` (what to generate) and `ProjectInitializer`
+/// (generate and validate a new project, like `smartwork init`). The
+/// lifecycles — `FeatureLifecycle`, `ServiceLifecycle`, `FontLifecycle`,
+/// `LocalizationLifecycle` and others — change an existing project, and
+/// `EnvironmentDoctor` checks the local Dart and Flutter setup.
+///
+/// SmartWork supports only the latest stable Flutter SDK.
 library smartwork_core;
 
 export 'src/models/app_icon_config.dart';

@@ -43,6 +43,7 @@ From 1.0.3 on, `smartwork update` works for pub.dev installs.
   anything, instead of looping or picking a default.
 - The configuration summary uses the same labels as the prompts (MVVM,
   BLoC, GetX, HTTP, ...).
+- Added `example/README.md`: a typical SmartWork session.
 - Requires `smartwork_core >=1.0.3`.
 
 ## 1.0.2

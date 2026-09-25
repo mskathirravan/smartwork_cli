@@ -12,6 +12,9 @@ install the CLI instead:
 dart pub global activate smartwork_cli
 ```
 
+SmartWork supports only the latest stable Flutter SDK. For using the API
+directly, see [`example/example.dart`](example/example.dart).
+
 Full documentation lives in the
 [SmartWork repository](https://github.com/mskathirravan/smartwork_cli).
 

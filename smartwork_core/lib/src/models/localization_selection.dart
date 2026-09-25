@@ -1,17 +1,24 @@
+/// Thrown for locale input that can't be parsed.
 class InvalidLocaleSelectionException implements Exception {
+  /// What was wrong with the input.
   final String message;
 
+  /// An error described by [message].
   InvalidLocaleSelectionException(this.message);
 
   @override
   String toString() => message;
 }
 
+/// Parses the locale answers of the Localization prompts.
 class LocalizationSelection {
   const LocalizationSelection._();
 
   static final _localePattern = RegExp(r'^[a-z]{2,3}(_[A-Z]{2})?$');
 
+  /// Parses comma-separated locales such as `en,fr,pt_BR`, dropping
+  /// duplicates. Throws [InvalidLocaleSelectionException] if none are given
+  /// or one is malformed.
   static List<String> parseSupportedLocales(String input) {
     final locales = <String>[];
     for (final token in input.split(',')) {
@@ -35,6 +42,8 @@ class LocalizationSelection {
     return locales;
   }
 
+  /// Returns [candidate] if it is one of [supportedLocales]; otherwise
+  /// throws [InvalidLocaleSelectionException].
   static String validateDefaultLocale(
     String candidate,
     List<String> supportedLocales,

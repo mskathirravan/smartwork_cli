@@ -1,0 +1,4 @@
+# Many CLI tests assert dart:io's exitCode, which is shared by the whole
+# test process. Running test files concurrently lets one file overwrite
+# another's exit code mid-test, so run them one at a time.
+concurrency: 1

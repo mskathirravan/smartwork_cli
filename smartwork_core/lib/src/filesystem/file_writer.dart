@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+/// Writes project files, creating parent folders as needed.
 class FileWriter {
   static const _recordingKey = #smartworkWrittenDartFiles;
 
@@ -16,6 +17,7 @@ class FileWriter {
     return written;
   }
 
+  /// Writes [content] to [filePath].
   Future<void> write(String filePath, String content) async {
     final file = File(filePath);
     final parentDir = file.parent;
@@ -30,6 +32,7 @@ class FileWriter {
     }
   }
 
+  /// Writes [bytes] to [filePath].
   Future<void> writeBytes(String filePath, List<int> bytes) async {
     final file = File(filePath);
     final parentDir = file.parent;
@@ -41,6 +44,7 @@ class FileWriter {
     await file.writeAsBytes(bytes);
   }
 
+  /// Copies [sourcePath] to [destPath].
   Future<void> copyFile(String sourcePath, String destPath) async {
     final destFile = File(destPath);
     final parentDir = destFile.parent;

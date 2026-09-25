@@ -21,6 +21,9 @@ says so and tells them to update, instead of failing silently.
   `runSystemProcess`, the default `ProcessRunner`), so `flutter.bat` is
   found.
 - Google Font projects: the generated `AppTheme` tests use `testWidgets`.
+- API documentation for the main public API (`ProjectConfig`,
+  `ProjectPaths`, the models, `ProjectInitializer`, `ProjectValidator`,
+  `EnvironmentDoctor`, ...) and a runnable `example/example.dart`.
 - Fixed: `FontLifecycle.updateFontSample` deleted `font_sample.dart`
   while project code still used `FontSample`; it now keeps (and updates)
   the sample in that case.

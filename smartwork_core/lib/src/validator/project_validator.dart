@@ -5,27 +5,45 @@ import 'package:path/path.dart' as path;
 import '../flutter/flutter_bootstrap.dart' show ProcessRunner, runSystemProcess;
 import '../models/project_config.dart';
 
+/// A step of [ProjectValidator.validate], in the order they run.
 enum ValidationPhase {
+  /// Every App Target has its platform folder.
   platforms('Platforms'),
+
+  /// `flutter pub get` (and `flutter gen-l10n` when localized) succeeds.
   dependencies('Dependencies'),
+
+  /// `dart format` would change nothing.
   format('Format'),
+
+  /// `flutter analyze` reports no issues.
   analyze('Analyze'),
+
+  /// `flutter test` passes.
   tests('Tests');
 
+  /// The name shown in the validation report.
   final String label;
 
   const ValidationPhase(this.label);
 }
 
+/// The result of one [ValidationPhase].
 class ValidationPhaseResult {
+  /// The phase that ran.
   final ValidationPhase phase;
+
+  /// Whether it passed.
   final bool passed;
+
+  /// What the phase's command printed (stdout and stderr).
   final String output;
 
   /// What the developer should do about a failure, when SmartWork can tell
   /// (e.g. an out-of-date Flutter SDK); null otherwise.
   final String? hint;
 
+  /// A phase result.
   ValidationPhaseResult({
     required this.phase,
     required this.passed,
@@ -34,16 +52,24 @@ class ValidationPhaseResult {
   });
 }
 
+/// The result of [ProjectValidator.validate]: the phases that ran.
 class ProjectValidationResult {
+  /// The phases that ran, in order; validation stops at the first failure.
   final List<ValidationPhaseResult> phases;
+
+  /// Whether every phase passed.
   final bool passed;
 
+  /// A validation result.
   ProjectValidationResult({required this.phases, required this.passed});
 }
 
+/// Thrown when a generated or changed project fails validation.
 class ProjectValidationFailedException implements Exception {
+  /// The validation result; its last phase is the one that failed.
   final ProjectValidationResult result;
 
+  /// An error for the failed [result].
   ProjectValidationFailedException(this.result);
 
   @override
@@ -63,12 +89,18 @@ class ProjectValidationFailedException implements Exception {
   }
 }
 
+/// Validates a project the way `smartwork init` and `smartwork target` do:
+/// platforms, dependencies, format, analyze, then tests.
 class ProjectValidator {
   final ProcessRunner _runProcess;
 
+  /// A validator; [runProcess] replaces how commands run (e.g. in tests).
   ProjectValidator({ProcessRunner? runProcess})
       : _runProcess = runProcess ?? runSystemProcess;
 
+  /// Validates the project at [projectPath], stopping at the first failed
+  /// phase. [appTargets] are the platforms whose folders must exist;
+  /// [localizationEnabled] also runs `flutter gen-l10n`.
   Future<ProjectValidationResult> validate(
     String projectPath, {
     required Set<AppTarget> appTargets,
@@ -217,6 +249,7 @@ class SdkUpdateHint {
     'from the flutter SDK',
   ];
 
+  /// Whether [pubOutput] shows the Flutter SDK is too old for a package.
   static bool isSdkTooOld(String pubOutput) => _markers.any(pubOutput.contains);
 
   /// [output] of a failed `flutter` command, followed by the "update
@@ -227,6 +260,8 @@ class SdkUpdateHint {
     return '$trimmed\n\n${message(trimmed)}';
   }
 
+  /// The "update Flutter" message, naming the current SDK version when
+  /// [pubOutput] mentions it.
   static String message(String pubOutput) {
     final current = RegExp(
       r'The current (Dart|Flutter) SDK version is (\S+?)\.?$',

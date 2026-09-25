@@ -71,7 +71,10 @@ class WireMockMockServer implements MockServer {
         [WireMockScriptGenerator.stopScriptPath],
         workingDirectory: projectPath,
       );
-    } on ProcessException {}
+    } on ProcessException {
+      // bash unavailable means the stop script can't have started WireMock
+      // either — there is nothing to stop.
+    }
   }
 
   @override

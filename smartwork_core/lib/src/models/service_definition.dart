@@ -1,27 +1,63 @@
+/// A Production Service SmartWork can generate into a project.
 enum Service {
+  /// Secure session and token storage.
   secureSession,
+
+  /// Network connectivity monitoring.
   connectivity,
+
+  /// Device and platform information.
   deviceInfo,
+
+  /// Accessibility settings (screen reader, text scale, reduced motion).
   accessibility,
+
+  /// Structured debug logging.
   logger,
+
+  /// Crash and error reporting.
   crashReporting,
+
+  /// Push notifications.
   notification,
+
+  /// Deep link handling.
   deeplink,
+
+  /// Product analytics.
   analytics,
+
+  /// Minimum-version enforcement (force update).
   forceUpdate,
+
+  /// In-app review requests.
   appReview,
+
+  /// In-memory, typed publish/subscribe for app events.
   eventBus,
+
+  /// Remote configuration (feature flags, dynamic values).
   remoteConfig,
 }
 
+/// The group a [Service] is listed under.
 enum ServiceCategory {
+  /// Security services.
   security,
+
+  /// Device and runtime services.
   deviceRuntime,
+
+  /// Diagnostics services.
   diagnostics,
+
+  /// Application integration services.
   applicationIntegration,
 }
 
+/// Display names for a [ServiceCategory].
 extension ServiceCategoryLabel on ServiceCategory {
+  /// Its human-readable name, e.g. `Device / Runtime`.
   String get displayName => switch (this) {
         ServiceCategory.security => 'Security',
         ServiceCategory.deviceRuntime => 'Device / Runtime',
@@ -30,9 +66,13 @@ extension ServiceCategoryLabel on ServiceCategory {
       };
 }
 
+/// What SmartWork generates for each [Service].
 extension ServiceDefinition on Service {
+  /// Its identifier, as used on the command line and in
+  /// `.smartwork/project.yaml`, e.g. `forceUpdate`.
   String get id => name;
 
+  /// Its human-readable name, e.g. `Force Update`.
   String get displayName => switch (this) {
         Service.secureSession => 'Secure Session',
         Service.connectivity => 'Connectivity Monitor',
@@ -49,6 +89,7 @@ extension ServiceDefinition on Service {
         Service.remoteConfig => 'Remote Config',
       };
 
+  /// The group it is listed under.
   ServiceCategory get category => switch (this) {
         Service.secureSession => ServiceCategory.security,
         Service.connectivity => ServiceCategory.deviceRuntime,
@@ -65,6 +106,7 @@ extension ServiceDefinition on Service {
         Service.remoteConfig => ServiceCategory.applicationIntegration,
       };
 
+  /// The generated Dart file's name, e.g. `force_update_service.dart`.
   String get fileName => switch (this) {
         Service.secureSession => 'secure_session_manager.dart',
         Service.connectivity => 'connectivity_monitor.dart',
@@ -81,6 +123,7 @@ extension ServiceDefinition on Service {
         Service.remoteConfig => 'remote_config_service.dart',
       };
 
+  /// Its folder under `lib/services/`, e.g. `force_update`.
   String get folderName => switch (this) {
         Service.secureSession => 'secure_session',
         Service.connectivity => 'connectivity',
@@ -97,6 +140,7 @@ extension ServiceDefinition on Service {
         Service.remoteConfig => 'remote_config',
       };
 
+  /// The generated class's name, e.g. `ForceUpdateService`.
   String get className => switch (this) {
         Service.secureSession => 'SecureSessionManager',
         Service.connectivity => 'ConnectivityMonitor',
@@ -113,6 +157,7 @@ extension ServiceDefinition on Service {
         Service.remoteConfig => 'RemoteConfigService',
       };
 
+  /// One sentence describing what the service is for.
   String get purpose => switch (this) {
         Service.secureSession =>
           'Application-level boundary for secure session/token storage.',
@@ -144,6 +189,8 @@ extension ServiceDefinition on Service {
               'flags, dynamic values) with local defaults.',
       };
 
+  /// Whether the generated service has an `initialize()` the app's
+  /// bootstrap calls at startup.
   bool get hasInitialize =>
       this != Service.logger &&
       this != Service.deviceInfo &&

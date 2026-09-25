@@ -5,14 +5,20 @@ import 'package:yaml/yaml.dart';
 
 import 'project_config.dart';
 
+/// Reads and writes a project's `.smartwork/project.yaml`, where its
+/// [ProjectConfig] is stored.
 class ProjectConfigFile {
+  /// The project's root directory.
   final String projectPath;
 
+  /// The configuration file of the project at [projectPath].
   ProjectConfigFile({required this.projectPath});
 
   String get _configPath =>
       path.join(projectPath, '.smartwork', 'project.yaml');
 
+  /// Reads the configuration. Throws a [FileSystemException] when the file
+  /// is missing (not a SmartWork project) or isn't valid YAML.
   Future<ProjectConfig> read() async {
     final file = File(_configPath);
     if (!await file.exists()) {
@@ -29,6 +35,7 @@ class ProjectConfigFile {
     }
   }
 
+  /// Writes [config], creating `.smartwork/` if needed.
   Future<void> write(ProjectConfig config) async {
     final dir = Directory(path.join(projectPath, '.smartwork'));
     await dir.create(recursive: true);

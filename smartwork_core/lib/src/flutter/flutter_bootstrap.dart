@@ -1,14 +1,18 @@
 import 'dart:io';
 
+/// Thrown when `flutter create` can't run or fails.
 class FlutterBootstrapException implements Exception {
+  /// What went wrong, including `flutter create`'s output.
   final String message;
 
+  /// An error described by [message].
   FlutterBootstrapException(this.message);
 
   @override
   String toString() => 'Flutter bootstrap failed: $message';
 }
 
+/// Runs a command, like [Process.run]; replaceable in tests.
 typedef ProcessRunner = Future<ProcessResult> Function(
   String executable,
   List<String> arguments, {
@@ -30,12 +34,18 @@ Future<ProcessResult> runSystemProcess(
   );
 }
 
+/// Creates the Flutter project SmartWork generates into, with
+/// `flutter create`.
 class FlutterBootstrap {
   final ProcessRunner _runProcess;
 
+  /// A bootstrap; [runProcess] replaces how commands run (e.g. in tests).
   FlutterBootstrap({ProcessRunner? runProcess})
       : _runProcess = runProcess ?? runSystemProcess;
 
+  /// Runs `flutter create` for [projectName] in [targetPath], for the
+  /// given [platforms] (all when omitted). Throws
+  /// [FlutterBootstrapException] on failure.
   Future<void> create({
     required String projectName,
     required String targetPath,

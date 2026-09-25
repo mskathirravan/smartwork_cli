@@ -1,8 +1,11 @@
 import '../validator/config_validator.dart';
 
+/// Thrown for a feature name that isn't a lowercase snake_case identifier.
 class InvalidFeatureNameException implements Exception {
+  /// The rejected name.
   final String name;
 
+  /// An error for the rejected [name].
   InvalidFeatureNameException(this.name);
 
   @override
@@ -11,26 +14,39 @@ class InvalidFeatureNameException implements Exception {
       'only lowercase letters, numbers, and underscores.';
 }
 
+/// A piece of a feature that `smartwork feature --components` can generate.
 enum FeatureComponent {
+  /// The domain entity.
   entity,
 
+  /// The repository (interface and implementation).
   repository,
 
+  /// The use case.
   useCase,
 
+  /// The data source.
   dataSource,
 
+  /// The page (screen).
   page,
 
+  /// The feature's widgets folder.
   widgets,
 
+  /// The feature's tests.
   tests,
 }
 
+/// A feature to generate: its name and which components to include.
 class FeatureConfig {
+  /// The feature's snake_case name, e.g. `order_history`.
   final String name;
+
+  /// The components to generate.
   final Set<FeatureComponent> components;
 
+  /// What a feature includes when no components are given.
   static const Set<FeatureComponent> standardComponents = {
     FeatureComponent.entity,
     FeatureComponent.repository,
@@ -56,6 +72,8 @@ class FeatureConfig {
     },
   };
 
+  /// A feature [name] with [components] (default [standardComponents]).
+  /// Throws [InvalidFeatureNameException] for an invalid name.
   FeatureConfig({
     required this.name,
     Set<FeatureComponent>? components,
@@ -65,6 +83,8 @@ class FeatureConfig {
     }
   }
 
+  /// A copy that also includes every component the chosen ones need
+  /// (e.g. a repository needs an entity and a data source).
   FeatureConfig resolveDependencies() {
     final resolved = <FeatureComponent>{...components};
     var changed = true;

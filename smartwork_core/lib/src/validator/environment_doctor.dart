@@ -6,15 +6,22 @@ import '../flutter/flutter_bootstrap.dart';
 import '../generator/pubspec_generator.dart';
 import 'project_validator.dart' show SdkUpdateHint;
 
+/// One check of [EnvironmentDoctor.checkEnvironment].
 class EnvironmentCheck {
+  /// What was checked, e.g. `Flutter`.
   final String label;
+
+  /// Whether the check passed.
   final bool passed;
+
+  /// Extra information: a version, or what's wrong and how to fix it.
   final String? detail;
 
   /// The check could not reach a verdict (e.g. pub.dev unreachable), so it
   /// is informational rather than a pass or a failure.
   final bool inconclusive;
 
+  /// A check result.
   EnvironmentCheck({
     required this.label,
     required this.passed,
@@ -23,10 +30,14 @@ class EnvironmentCheck {
   });
 }
 
+/// Checks the local environment is ready for SmartWork, like
+/// `smartwork doctor`.
 class EnvironmentDoctor {
   final ProcessRunner _runProcess;
   final Future<String> Function() _dependencyProbe;
 
+  /// A doctor; [runProcess] and [dependencyProbe] can be replaced (e.g.
+  /// in tests).
   EnvironmentDoctor({
     ProcessRunner? runProcess,
     Future<String> Function()? dependencyProbe,
@@ -34,6 +45,8 @@ class EnvironmentDoctor {
         _dependencyProbe =
             dependencyProbe ?? PubspecGenerator().generateDependencyProbe;
 
+  /// Checks Dart, the Flutter executable, Flutter itself and — when
+  /// Flutter works — that it can resolve SmartWork's package versions.
   Future<List<EnvironmentCheck>> checkEnvironment() async {
     final results = <EnvironmentCheck>[await _checkVersionCommand('dart')];
 

@@ -1,17 +1,24 @@
 import 'project_config.dart';
 
+/// Thrown for App Targets input that can't be parsed.
 class InvalidAppTargetSelectionException implements Exception {
+  /// What was wrong with the input.
   final String message;
 
+  /// An error described by [message].
   InvalidAppTargetSelectionException(this.message);
 
   @override
   String toString() => message;
 }
 
+/// Parses the App Targets answer of `smartwork init` and
+/// `smartwork target`.
 class AppTargetSelection {
   const AppTargetSelection._();
 
+  /// Parses comma-separated menu numbers, e.g. `1,2`. Throws
+  /// [InvalidAppTargetSelectionException] if empty or invalid.
   static Set<AppTarget> parse(String input) {
     final trimmed = input.trim();
     if (trimmed.isEmpty) {
